@@ -1,4 +1,4 @@
-// src/models/User.js
+// backend/models/Admin.js
 const { ObjectId } = require('mongodb');
 const { getDB } = require('../db');
 const bcrypt = require('bcryptjs');
