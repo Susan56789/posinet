@@ -33,14 +33,14 @@ export default {
                 quantity: this.quantity,
                 price: this.price
             };
-            const res = await axios.post('http://localhost:5000/sales', newSale);
+            const res = await axios.post('https://posinet.onrender.com/sales', newSale);
             this.sales.push(res.data);
             this.product = '';
             this.quantity = 0;
             this.price = 0;
         },
         async fetchSales() {
-            const res = await axios.get('http://localhost:5000/sales');
+            const res = await axios.get('https://posinet.onrender.com/sales');
             this.sales = res.data;
         }
     },

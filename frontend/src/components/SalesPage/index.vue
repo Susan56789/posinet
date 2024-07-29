@@ -30,7 +30,7 @@ export default {
     methods: {
         async searchProduct() {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/products/search?q=${this.searchQuery}`, {
+            const res = await axios.get(`https://posinet.onrender.com/products/search?q=${this.searchQuery}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -48,7 +48,7 @@ export default {
                 quantity: this.quantity,
                 coupon: this.coupon
             };
-            await axios.post('http://localhost:5000/sales', sale, {
+            await axios.post('https://posinet.onrender.com/sales', sale, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }

@@ -100,6 +100,49 @@ const routes = [
                 }
             },
             // Add other routes as needed
+            // Admin routes
+            {
+                path: 'admin',
+                component: () => import('@/components/AdminPage/index.vue'),
+                meta: { breadcrumb: 'Admin', title: 'Admin' },
+                beforeEnter: (to, from, next) => {
+                    const token = localStorage.getItem('token');
+                    if (!token) return next('/login');
+                    next();
+                },
+                children: [
+                    {
+                        path: '',
+                        name: 'AdminDashboard',
+                        component: () => import('@/components/AdminPage/index.vue'),
+                        meta: { breadcrumb: 'Dashboard', title: 'Admin Dashboard' }
+                    },
+                    {
+                        path: 'users',
+                        name: 'AdminUsers',
+                        component: () => import('@/components/AdminPage/AdminUsers.vue'),
+                        meta: { breadcrumb: 'Users', title: 'Manage Users' }
+                    },
+                    {
+                        path: 'products',
+                        name: 'AdminProducts',
+                        component: () => import('@/components/AdminPage/AdminProducts.vue'),
+                        meta: { breadcrumb: 'Products', title: 'Manage Products' }
+                    },
+                    {
+                        path: 'permissions',
+                        name: 'AdminPermissions',
+                        component: () => import('@/components/AdminPage/AdminPermissions.vue'),
+                        meta: { breadcrumb: 'Permissions', title: 'Manage Permissions' }
+                    },
+                    {
+                        path: 'reports',
+                        name: 'AdminReports',
+                        component: () => import('@/components/AdminPage/AdminReports.vue'),
+                        meta: { breadcrumb: 'Reports', title: 'View Reports' }
+                    }
+                ]
+            },
         ]
     }
 ];

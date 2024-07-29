@@ -32,7 +32,7 @@ export default {
     methods: {
         async login() {
             try {
-                const res = await axios.post('http://localhost:5000/login', {
+                const res = await axios.post('https://posinet.onrender.com/login', {
                     email: this.email,
                     password: this.password
                 });
