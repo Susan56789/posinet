@@ -40,52 +40,57 @@ PosiNet is a comprehensive web-based Point of Sale (POS) system designed to mana
 
 1. Clone the repository:
 
-   ```bash
+   ```
+
    git clone https://github.com/your-username/posinet.git
    cd posinet/backend
+
    ```
 
 2. Install the dependencies:
 
    ```
-   bash
    npm install
+
    ```
 
 3. Create a `.env` file in the `backend` directory and add your MongoDB connection string and JWT secret:
 
    ```
-   env
    MONGO_URI=mongodb://localhost:27017/posinet
    JWT_SECRET=your_jwt_secret
+
    ```
 
 4. Start the backend server:
 
    ```
-   bash
    node src/index.js
+
    ```
 
 ### Frontend
 
 1. Navigate to the `frontend` directory:
 
-   ```bash
+   ```
+
    cd ../frontend
+
    ```
 
 2. Install the dependencies:
 
    ```
-   bash
    npm install
+
    ```
 
 3. Start the frontend development server:
 
-   ```bash
+   ```
    npm run serve
+
    ```
 
 ## Running the Application
@@ -93,16 +98,20 @@ PosiNet is a comprehensive web-based Point of Sale (POS) system designed to mana
 1. Make sure MongoDB is running on your system.
 2. Start the backend server:
 
-   ```bash
+   ```
+
    cd backend
    node src/index.js
+
    ```
 
 3. Start the frontend server:
 
-   ```bash
+   ```
+
    cd frontend
    npm run serve
+
    ```
 
 4. Open your browser and navigate to `http://localhost:8080`.
