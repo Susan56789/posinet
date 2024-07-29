@@ -142,6 +142,17 @@ const routes = [
                     next();
                 }
             },
+            {
+                path: 'profile',
+                name: 'Profile',
+                component: () => import('@/components/UserProfile/index.vue'),
+                meta: { breadcrumb: 'Profile', title: 'Profile' },
+                beforeEnter: (to, from, next) => {
+                    const token = localStorage.getItem('token');
+                    if (!token) return next('/login');
+                    next();
+                }
+            },
         ]
     }
 ];

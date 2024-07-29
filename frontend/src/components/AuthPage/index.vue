@@ -58,6 +58,10 @@ export default {
                 const { token, user } = res.data;
                 localStorage.setItem('token', token);
                 localStorage.setItem('role', user.role);
+                localStorage.setItem('userName', user.name);
+                localStorage.setItem('email', user.email);
+
+
                 if (user.role === 'admin') {
                     this.$router.push('/admin');
                 } else {

@@ -17,13 +17,10 @@ const register = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Create a new user with the hashed password
-        const user = new User({ email, password: hashedPassword, ...otherFields });
-
-        // Save the user to the database
-        await user.save();
+        const user = await User.create({ email, password: hashedPassword, ...otherFields });
 
         // Return the newly created user (without the password)
-        const { password: _, ...userWithoutPassword } = user.toObject();
+        const { password: _, ...userWithoutPassword } = user;
         res.status(201).send(userWithoutPassword);
     } catch (error) {
         res.status(400).send(error.message);
@@ -50,11 +47,19 @@ const login = async (req, res) => {
 
         // If user not found in either collection
         if (!user) {
+            console.log('User not found');
             return res.status(404).send('User not found');
         }
 
+        // Log user object retrieved
+        console.log('User found:', user);
+
         // Compare the password with the hashed password in the database
         const isMatch = await bcrypt.compare(password, user.password);
+
+        // Log password comparison result
+        console.log('Password match:', isMatch);
+
         if (!isMatch) {
             return res.status(400).send('Invalid credentials');
         }
@@ -82,6 +87,7 @@ const login = async (req, res) => {
 
         res.status(200).send(response);
     } catch (error) {
+        console.log('Login error:', error);
         res.status(400).send(error.message);
     }
 };

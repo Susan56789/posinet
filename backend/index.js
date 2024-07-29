@@ -1,12 +1,21 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const crypto = require('crypto');
 const { connectDB } = require('./db');
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const inventoryRoutes = require('./routes/inventory');
-// Import other routes
 const { auth, admin } = require('./middleware/auth');
+
+// Function to generate a random string
+function generateSecretKey() {
+    return crypto.randomBytes(64).toString('hex');
+}
+
+// Set JWT_SECRET if not already set
+process.env.JWT_SECRET = generateSecretKey();
+
 
 const app = express();
 
@@ -25,7 +34,7 @@ app.get('/', (req, res) => {
 app.use(auth);
 app.use(productRoutes);
 app.use(inventoryRoutes);
-// Use other routes that require authentication
+
 
 // Start server
 const PORT = process.env.PORT || 5000;

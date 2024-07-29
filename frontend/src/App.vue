@@ -1,28 +1,28 @@
-<!-- src/App.vue -->
 <template>
-
-
-  <router-view></router-view>
-
+  <div id="app">
+    <Header v-if="isLoggedIn" />
+    <router-view />
+  </div>
 </template>
 
 <script>
-
+import Header from './components/HeaderPage.vue';
 
 export default {
-  name: 'App',
+  components: {
+    Header
+  },
+  computed: {
+    isLoggedIn() {
+      return !!localStorage.getItem('token');
+    }
+  }
 };
 </script>
 
-
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+body {
+  padding-top: 50px;
+  /* Adjust this based on your header height */
 }
 </style>
-./components/POS.vue
