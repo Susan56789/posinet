@@ -31,15 +31,19 @@ const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
+        console.log('Login attempt:', email);
+
         let user = null;
         let isAdmin = false;
 
         // Check in User collection
         user = await User.findOne({ email });
+        console.log('User found in User collection:', user);
 
         // If not found in User collection, check in Admin collection
         if (!user) {
             user = await Admin.findOne({ email });
+            console.log('User found in Admin collection:', user);
             if (user) {
                 isAdmin = true;
             }
@@ -47,19 +51,12 @@ const login = async (req, res) => {
 
         // If user not found in either collection
         if (!user) {
-            console.log('User not found');
             return res.status(404).send('User not found');
         }
 
-        // Log user object retrieved
-        console.log('User found:', user);
-
         // Compare the password with the hashed password in the database
         const isMatch = await bcrypt.compare(password, user.password);
-
-        // Log password comparison result
         console.log('Password match:', isMatch);
-
         if (!isMatch) {
             return res.status(400).send('Invalid credentials');
         }
@@ -85,11 +82,14 @@ const login = async (req, res) => {
             }
         };
 
+        console.log('Login successful:', response);
+
         res.status(200).send(response);
     } catch (error) {
-        console.log('Login error:', error);
+        console.error('Login error:', error.message);
         res.status(400).send(error.message);
     }
 };
+
 
 module.exports = { register, login };
