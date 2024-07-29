@@ -32,6 +32,6 @@ const createAdmin = async (email, password, otherFields) => {
 // Usage example
 const email = 'devnimoh@gmail.com';
 const password = 'Admin123.';
-const otherFields = { name: 'Susan Wairimu' };
+const otherFields = { name: 'Susan Wairimu', organization: 'Quirkweb Studios', location: 'Nairobi' };
 
 createAdmin(email, password, otherFields);
