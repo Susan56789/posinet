@@ -31,7 +31,7 @@ const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        console.log('Login attempt:', email);
+        console.log('Login attempt for email:', email);
 
         let user = null;
         let isAdmin = false;
@@ -43,11 +43,12 @@ const login = async (req, res) => {
         // If not found in User collection, check in Admin collection
         if (!user) {
             user = await Admin.findOne({ email });
-            console.log('User found in Admin collection:', user);
             if (user) {
                 isAdmin = true;
             }
         }
+
+        console.log('User found in Admin collection:', user);
 
         // If user not found in either collection
         if (!user) {
@@ -56,7 +57,8 @@ const login = async (req, res) => {
 
         // Compare the password with the hashed password in the database
         const isMatch = await bcrypt.compare(password, user.password);
-        console.log('Password match:', isMatch);
+        console.log('Password match result:', isMatch);
+
         if (!isMatch) {
             return res.status(400).send('Invalid credentials');
         }
@@ -78,18 +80,17 @@ const login = async (req, res) => {
                 id: user._id,
                 email: user.email,
                 role: isAdmin ? 'admin' : 'user',
-                // Add any other user fields you want to include
+                name: user.name // Ensure name field is present
             }
         };
 
-        console.log('Login successful:', response);
-
         res.status(200).send(response);
     } catch (error) {
-        console.error('Login error:', error.message);
+        console.error('Error during login:', error);
         res.status(400).send(error.message);
     }
 };
+
 
 
 module.exports = { register, login };
