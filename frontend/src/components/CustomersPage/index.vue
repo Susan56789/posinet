@@ -1,9 +1,9 @@
 <template>
-    <div>Inventory</div>
+    <div>Customers</div>
 </template>
 
 <script>
 export default {
-    name: 'InventoryPage'
+    name: 'CustomersPage'
 }
 </script>

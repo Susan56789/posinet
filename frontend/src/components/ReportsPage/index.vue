@@ -4,6 +4,6 @@
 
 <script>
 export default {
-    name: 'InventoryPage'
+    name: 'ReportsPage'
 }
 </script>

@@ -1,9 +1,10 @@
-// middleware/auth.js
 const jwt = require('jsonwebtoken');
 
 const auth = (req, res, next) => {
-    const token = req.header('Authorization').replace('Bearer ', '');
-    if (!token) return res.status(401).send('Access denied');
+    const authHeader = req.header('Authorization');
+    if (!authHeader) return res.status(401).send('Access denied. No token provided.');
+
+    const token = authHeader.replace('Bearer ', '');
     try {
         const decoded = jwt.verify(token, 'secret');
         req.user = decoded;
@@ -14,7 +15,7 @@ const auth = (req, res, next) => {
 };
 
 const admin = (req, res, next) => {
-    if (req.user.role !== 'admin') return res.status(403).send('Access denied');
+    if (!req.user || req.user.role !== 'admin') return res.status(403).send('Access denied');
     next();
 };
 

@@ -14,16 +14,18 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Routes
+// Public Routes
 app.use(authRoutes);
-app.use(auth);
-app.use(productRoutes);
-app.use(inventoryRoutes);
-// Use other routes
 
 app.get('/', (req, res) => {
     res.send('Welcome to PosiNet Backend');
 });
+
+// Protected Routes
+app.use(auth);
+app.use(productRoutes);
+app.use(inventoryRoutes);
+// Use other routes that require authentication
 
 // Start server
 const PORT = process.env.PORT || 5000;
