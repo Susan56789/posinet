@@ -34,11 +34,13 @@ const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Check User collection first
-        let user = await User.findOne({ email });
+        let user = null;
         let isAdmin = false;
 
-        // If not found in User collection, check Admin collection
+        // Check in User collection
+        user = await User.findOne({ email });
+
+        // If not found in User collection, check in Admin collection
         if (!user) {
             user = await Admin.findOne({ email });
             if (user) {

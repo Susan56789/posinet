@@ -6,6 +6,14 @@ const routes = [
         component: () => import('@/components/PageLayout.vue'),
         children: [
             {
+
+                path: '',
+                name: 'Home',
+                component: () => import('@/components/HomePage.vue'),
+                meta: { breadcrumb: 'Home', title: 'Home' }
+
+            },
+            {
                 path: 'login',
                 name: 'Login',
                 component: () => import('@/components/AuthPage/index.vue'),
@@ -18,15 +26,50 @@ const routes = [
                 meta: { breadcrumb: 'Admin', title: 'Admin' },
                 beforeEnter: (to, from, next) => {
                     const token = localStorage.getItem('token');
-                    if (!token) return next('/login');
+                    const role = localStorage.getItem('role');
+                    if (!token || role !== 'admin') {
+                        return next('/login');
+                    }
                     next();
-                }
+                },
+                children: [
+                    {
+                        path: '',
+                        name: 'AdminDashboard',
+                        component: () => import('@/components/AdminPage/index.vue'),
+                        meta: { breadcrumb: 'Dashboard', title: 'Admin Dashboard' }
+                    },
+                    {
+                        path: 'users',
+                        name: 'AdminUsers',
+                        component: () => import('@/components/AdminPage/AdminUsers.vue'),
+                        meta: { breadcrumb: 'Users', title: 'Manage Users' }
+                    },
+                    {
+                        path: 'products',
+                        name: 'AdminProducts',
+                        component: () => import('@/components/AdminPage/AdminProducts.vue'),
+                        meta: { breadcrumb: 'Products', title: 'Manage Products' }
+                    },
+                    {
+                        path: 'permissions',
+                        name: 'AdminPermissions',
+                        component: () => import('@/components/AdminPage/AdminPermissions.vue'),
+                        meta: { breadcrumb: 'Permissions', title: 'Manage Permissions' }
+                    },
+                    {
+                        path: 'reports',
+                        name: 'AdminReports',
+                        component: () => import('@/components/AdminPage/AdminReports.vue'),
+                        meta: { breadcrumb: 'Reports', title: 'View Reports' }
+                    }
+                ]
             },
             {
-                path: 'inventory',
-                name: 'Inventory',
-                component: () => import('@/components/InventoryPage/index.vue'),
-                meta: { breadcrumb: 'Inventory', title: 'Inventory' },
+                path: 'sales',
+                name: 'Sales',
+                component: () => import('@/components/SalesPage/index.vue'),
+                meta: { breadcrumb: 'Sales', title: 'Sales' },
                 beforeEnter: (to, from, next) => {
                     const token = localStorage.getItem('token');
                     if (!token) return next('/login');
@@ -34,10 +77,10 @@ const routes = [
                 }
             },
             {
-                path: 'sales',
-                name: 'Sales',
-                component: () => import('@/components/SalesPage/index.vue'),
-                meta: { breadcrumb: 'Sales', title: 'Sales' },
+                path: 'inventory',
+                name: 'SInventory',
+                component: () => import('@/components/InventoryPage/index.vue'),
+                meta: { breadcrumb: 'Inventory', title: 'Inventory' },
                 beforeEnter: (to, from, next) => {
                     const token = localStorage.getItem('token');
                     if (!token) return next('/login');
@@ -99,50 +142,6 @@ const routes = [
                     next();
                 }
             },
-            // Add other routes as needed
-            // Admin routes
-            {
-                path: 'admin',
-                component: () => import('@/components/AdminPage/index.vue'),
-                meta: { breadcrumb: 'Admin', title: 'Admin' },
-                beforeEnter: (to, from, next) => {
-                    const token = localStorage.getItem('token');
-                    if (!token) return next('/login');
-                    next();
-                },
-                children: [
-                    {
-                        path: '',
-                        name: 'AdminDashboard',
-                        component: () => import('@/components/AdminPage/index.vue'),
-                        meta: { breadcrumb: 'Dashboard', title: 'Admin Dashboard' }
-                    },
-                    {
-                        path: 'users',
-                        name: 'AdminUsers',
-                        component: () => import('@/components/AdminPage/AdminUsers.vue'),
-                        meta: { breadcrumb: 'Users', title: 'Manage Users' }
-                    },
-                    {
-                        path: 'products',
-                        name: 'AdminProducts',
-                        component: () => import('@/components/AdminPage/AdminProducts.vue'),
-                        meta: { breadcrumb: 'Products', title: 'Manage Products' }
-                    },
-                    {
-                        path: 'permissions',
-                        name: 'AdminPermissions',
-                        component: () => import('@/components/AdminPage/AdminPermissions.vue'),
-                        meta: { breadcrumb: 'Permissions', title: 'Manage Permissions' }
-                    },
-                    {
-                        path: 'reports',
-                        name: 'AdminReports',
-                        component: () => import('@/components/AdminPage/AdminReports.vue'),
-                        meta: { breadcrumb: 'Reports', title: 'View Reports' }
-                    }
-                ]
-            },
         ]
     }
 ];
@@ -150,6 +149,11 @@ const routes = [
 const router = createRouter({
     history: createWebHistory(),
     routes
+});
+
+router.beforeEach((to, from, next) => {
+    document.title = to.meta.title || 'Posinet POS';
+    next();
 });
 
 export default router;
