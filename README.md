@@ -107,16 +107,16 @@ PosiNet is a comprehensive web-based Point of Sale (POS) system designed to mana
 
 3. Start the frontend server:
 
-   ```
-
-   cd frontend
+   ```cd frontend
    npm run serve
-
    ```
+
+```
 
 4. Open your browser and navigate to `http://localhost:8080`.
 
 ## Project Structure
+```
 ````
 
 posinet/
