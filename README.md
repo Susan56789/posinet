@@ -1,201 +1,119 @@
-````markdown
-# PosiNet
+# Posinet
 
-PosiNet is a comprehensive web-based Point of Sale (POS) system designed to manage sales, inventory, customers, suppliers, item repairs, expenses, and reports. It also includes advanced features like coupon management, barcode scanning, and multiple payment options. The frontend is built with Vue.js, while the backend is powered by Node.js and MongoDB.
+Posinet is a comprehensive Point of Sale (POS) system designed to streamline retail and sales processes. The application features user and admin roles, secure authentication, and various functionalities to manage sales, inventory, and user accounts.
 
 ## Table of Contents
 
+- [Project Description](#project-description)
 - [Features](#features)
-- [Prerequisites](#prerequisites)
 - [Installation](#installation)
-- [Running the Application](#running-the-application)
-- [Project Structure](#project-structure)
-- [API Endpoints](#api-endpoints)
+- [Usage](#usage)
+- [API Documentation](#api-documentation)
 - [Contributing](#contributing)
 - [License](#license)
+- [Contact](#contact)
+
+## Project Description
+
+Posinet is an advanced POS system tailored for businesses seeking an efficient way to manage transactions and operations. It includes features such as user and admin roles, JWT-based authentication, and a user-friendly interface for seamless interaction.
 
 ## Features
 
-- User authentication and authorization
-- Admin panel for managing users and products
-- Sales management with search, coupons, and barcode scanning
-- Inventory management
-- Customer and supplier management
-- Item repair tracking
-- Expense management
-- Reporting
-- Multiple payment options
-
-## Prerequisites
-
-- Node.js v12.x or later
-- npm v6.x or later
-- MongoDB v4.x or later
+- **User and Admin Roles**: Different functionalities based on user roles.
+- **Secure Authentication**: JWT-based authentication with bcrypt password hashing.
+- **Responsive Design**: Mobile-friendly and accessible layout.
+- **Integration with Backend**: Communicates with the backend for data retrieval and submission.
 
 ## Installation
 
-### Backend
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v14.x or later)
+- [MongoDB](https://www.mongodb.com/) (for database management)
+
+### Frontend Setup
 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-username/posinet.git
-   cd posinet/backend
+   git clone https://github.com/Susan56789/posinet.git
+   cd posinet
    ```
 
-2. Install the dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env` file in the `backend` directory and add your MongoDB connection string and JWT secret:
-
-   ```env
-   MONGO_URI=mongodb://localhost:27017/posinet
-   JWT_SECRET=your_jwt_secret
-   ```
-
-4. Start the backend server:
-
-   ```bash
-   node src/index.js
-   ```
-
-### Frontend
-
-1. Navigate to the `frontend` directory:
-
-   ```bash
-   cd ../frontend
-   ```
-
-2. Install the dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Start the frontend development server:
-
-   ```bash
-   npm run serve
-   ```
-
-## Running the Application
-
-1. Make sure MongoDB is running on your system.
-2. Start the backend server:
-
-   ```bash
-   cd backend
-   node src/index.js
-   ```
-
-3. Start the frontend server:
+2. Navigate to the frontend directory:
 
    ```bash
    cd frontend
+   ```
+
+3. Install the dependencies:
+
+   ```bash
+   npm install
+   ```
+
+4. Start the frontend development server:
+   ```bash
    npm run serve
    ```
 
-4. Open your browser and navigate to `http://localhost:8080`.
+### Backend Setup
 
-## Project Structure
-````
+1. Navigate to the backend directory:
 
-posinet/
-├── backend/
-│ ├── src/
-│ │ ├── controllers/
-│ │ ├── middleware/
-│ │ ├── models/
-│ │ ├── routes/
-│ │ ├── index.js
-│ │ └── db.js
-│ ├── .env
-│ ├── package.json
-│ └── README.md
-└── frontend/
-├── src/
-│ ├── components/
-│ ├── router/
-│ ├── views/
-│ ├── App.vue
-│ └── main.js
-├── public/
-├── package.json
-└── README.md
+   ```bash
+   cd backend
+   ```
 
-```
+2. Install the dependencies:
 
-## API Endpoints
+   ```bash
+   npm install
+   ```
 
-### Authentication
+3. Create a `.env` file in the `backend` directory and add the following environment variables:
 
-- **POST /login**: User login
-- **POST /register**: User registration
+   ```env
+   JWT_SECRET=your_jwt_secret
+   MONGO_URI=your_mongodb_connection_string
+   ```
 
-### Products
+4. Start the backend server:
+   ```bash
+   npm start
+   ```
 
-- **POST /products**: Add a new product
-- **GET /products**: Get all products
-- **PUT /products/:id**: Update a product
-- **DELETE /products/:id**: Delete a product
-- **GET /products/search**: Search for a product
+## Usage
 
-### Sales
+1. **Frontend**: Open your browser and navigate to `http://localhost:8080` to access the application.
 
-- **POST /sales**: Record a sale
+2. **Backend**: The backend API will be available at `http://localhost:5000`. The API handles authentication, user management, and other server-side logic.
 
-### Inventory
+## API Documentation
 
-- **POST /inventory**: Add inventory
-- **GET /inventory**: Get inventory
-- **PUT /inventory/:id**: Update inventory
-- **DELETE /inventory/:id**: Delete inventory
-
-### Customers
-
-- **POST /customers**: Add a customer
-- **GET /customers**: Get all customers
-- **PUT /customers/:id**: Update a customer
-- **DELETE /customers/:id**: Delete a customer
-
-### Suppliers
-
-- **POST /suppliers**: Add a supplier
-- **GET /suppliers**: Get all suppliers
-- **PUT /suppliers/:id**: Update a supplier
-- **DELETE /suppliers/:id**: Delete a supplier
-
-### Item Repair
-
-- **POST /item-repair**: Add an item repair
-- **GET /item-repair**: Get all item repairs
-- **PUT /item-repair/:id**: Update an item repair
-- **DELETE /item-repair/:id**: Delete an item repair
-
-### Expenses
-
-- **POST /expenses**: Add an expense
-- **GET /expenses**: Get all expenses
-- **PUT /expenses/:id**: Update an expense
-- **DELETE /expenses/:id**: Delete an expense
-
-### Reports
-
-- **GET /reports**: Get reports
+For detailed API documentation, refer to the [API Documentation](docs/API.md) file.
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Create a new Pull Request
+We welcome contributions to Posinet. If you would like to contribute, please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch: `git checkout -b feature/your-feature-name`.
+3. Make your changes and commit them: `git commit -am 'Add new feature'`.
+4. Push to the branch: `git push origin feature/your-feature-name`.
+5. Create a pull request with a description of your changes.
 
 ## License
 
-This project is licensed under the MIT License.
-```
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Contact
+
+For any questions or inquiries, please contact us at:
+
+- **Email**: support@posinet.com
+- **Website**: [posinet.com](https://posinet.com)
+
+---
+
+Thank you for using Posinet!
