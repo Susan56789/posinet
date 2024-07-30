@@ -3,6 +3,7 @@ const Admin = require('../models/Admin');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
+// Register function for users
 const register = async (req, res) => {
     try {
         const { email, password, ...otherFields } = req.body;
@@ -20,37 +21,25 @@ const register = async (req, res) => {
         const user = await User.create({ email, password: hashedPassword, ...otherFields });
 
         // Return the newly created user (without the password)
-        const { password: _, ...userWithoutPassword } = user;
+        const { password: _, ...userWithoutPassword } = user.toObject();
         res.status(201).send(userWithoutPassword);
     } catch (error) {
         res.status(400).send(error.message);
     }
 };
 
-const login = async (req, res) => {
+// Login function for users
+const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        console.log('Login attempt for email:', email);
-
-        let user = null;
-        let isAdmin = false;
+        console.log('User login attempt for email:', email);
 
         // Check in User collection
-        user = await User.findOne({ email });
+        const user = await User.findOne({ email });
         console.log('User found in User collection:', user);
 
-        // If not found in User collection, check in Admin collection
-        if (!user) {
-            user = await Admin.findOne({ email });
-            if (user) {
-                isAdmin = true;
-            }
-        }
-
-        console.log('User found in Admin collection:', user);
-
-        // If user not found in either collection
+        // If user not found
         if (!user) {
             return res.status(404).send('User not found');
         }
@@ -65,10 +54,7 @@ const login = async (req, res) => {
 
         // Generate a JWT token
         const token = jwt.sign(
-            {
-                userId: user._id,
-                role: isAdmin ? 'admin' : 'user'
-            },
+            { userId: user._id, role: 'user' },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
@@ -79,18 +65,65 @@ const login = async (req, res) => {
             user: {
                 id: user._id,
                 email: user.email,
-                role: isAdmin ? 'admin' : 'user',
+                role: 'user',
                 name: user.name // Ensure name field is present
             }
         };
 
         res.status(200).send(response);
     } catch (error) {
-        console.error('Error during login:', error);
+        console.error('Error during user login:', error);
         res.status(400).send(error.message);
     }
 };
 
+// Login function for admins
+const loginAdmin = async (req, res) => {
+    try {
+        const { email, password } = req.body;
 
+        console.log('Admin login attempt for email:', email);
 
-module.exports = { register, login };
+        // Check in Admin collection
+        const admin = await Admin.findOne({ email });
+        console.log('Admin found in Admin collection:', admin);
+
+        // If admin not found
+        if (!admin) {
+            return res.status(404).send('Admin not found');
+        }
+
+        // Compare the password with the hashed password in the database
+        const isMatch = await bcrypt.compare(password, admin.password);
+        console.log('Password match result:', isMatch);
+
+        if (!isMatch) {
+            return res.status(400).send('Invalid credentials');
+        }
+
+        // Generate a JWT token
+        const token = jwt.sign(
+            { userId: admin._id, role: 'admin' },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        // Prepare the response object
+        const response = {
+            token,
+            admin: {
+                id: admin._id,
+                email: admin.email,
+                role: 'admin',
+                name: admin.name // Ensure name field is present
+            }
+        };
+
+        res.status(200).send(response);
+    } catch (error) {
+        console.error('Error during admin login:', error);
+        res.status(400).send(error.message);
+    }
+};
+
+module.exports = { register, loginUser, loginAdmin };

@@ -6,18 +6,22 @@ const routes = [
         component: () => import('@/components/PageLayout.vue'),
         children: [
             {
-
                 path: '',
                 name: 'Home',
                 component: () => import('@/components/HomePage.vue'),
                 meta: { breadcrumb: 'Home', title: 'Home' }
-
             },
             {
-                path: 'login',
-                name: 'Login',
+                path: 'login/user',
+                name: 'UserLogin',
                 component: () => import('@/components/AuthPage/index.vue'),
-                meta: { breadcrumb: 'Login', title: 'Login' }
+                meta: { breadcrumb: 'User Login', title: 'User Login' }
+            },
+            {
+                path: 'login/admin',
+                name: 'AdminLogin',
+                component: () => import('@/components/AuthPage/AdminLogin.vue'),
+                meta: { breadcrumb: 'Admin Login', title: 'Admin Login' }
             },
             {
                 path: 'admin',
@@ -28,7 +32,7 @@ const routes = [
                     const token = localStorage.getItem('token');
                     const role = localStorage.getItem('role');
                     if (!token || role !== 'admin') {
-                        return next('/login');
+                        return next('/login/admin');
                     }
                     next();
                 },
@@ -72,18 +76,18 @@ const routes = [
                 meta: { breadcrumb: 'Sales', title: 'Sales' },
                 beforeEnter: (to, from, next) => {
                     const token = localStorage.getItem('token');
-                    if (!token) return next('/login');
+                    if (!token) return next('/login/user');
                     next();
                 }
             },
             {
                 path: 'inventory',
-                name: 'SInventory',
+                name: 'Inventory',
                 component: () => import('@/components/InventoryPage/index.vue'),
                 meta: { breadcrumb: 'Inventory', title: 'Inventory' },
                 beforeEnter: (to, from, next) => {
                     const token = localStorage.getItem('token');
-                    if (!token) return next('/login');
+                    if (!token) return next('/login/user');
                     next();
                 }
             },
@@ -94,7 +98,7 @@ const routes = [
                 meta: { breadcrumb: 'Customers', title: 'Customers' },
                 beforeEnter: (to, from, next) => {
                     const token = localStorage.getItem('token');
-                    if (!token) return next('/login');
+                    if (!token) return next('/login/user');
                     next();
                 }
             },
@@ -105,7 +109,7 @@ const routes = [
                 meta: { breadcrumb: 'Suppliers', title: 'Suppliers' },
                 beforeEnter: (to, from, next) => {
                     const token = localStorage.getItem('token');
-                    if (!token) return next('/login');
+                    if (!token) return next('/login/user');
                     next();
                 }
             },
@@ -116,7 +120,7 @@ const routes = [
                 meta: { breadcrumb: 'Item Repair', title: 'Item Repair' },
                 beforeEnter: (to, from, next) => {
                     const token = localStorage.getItem('token');
-                    if (!token) return next('/login');
+                    if (!token) return next('/login/user');
                     next();
                 }
             },
@@ -127,7 +131,7 @@ const routes = [
                 meta: { breadcrumb: 'Expenses', title: 'Expenses' },
                 beforeEnter: (to, from, next) => {
                     const token = localStorage.getItem('token');
-                    if (!token) return next('/login');
+                    if (!token) return next('/login/user');
                     next();
                 }
             },
@@ -138,7 +142,7 @@ const routes = [
                 meta: { breadcrumb: 'Reports', title: 'Reports' },
                 beforeEnter: (to, from, next) => {
                     const token = localStorage.getItem('token');
-                    if (!token) return next('/login');
+                    if (!token) return next('/login/user');
                     next();
                 }
             },
@@ -149,7 +153,7 @@ const routes = [
                 meta: { breadcrumb: 'Profile', title: 'Profile' },
                 beforeEnter: (to, from, next) => {
                     const token = localStorage.getItem('token');
-                    if (!token) return next('/login');
+                    if (!token) return next('/login/user');
                     next();
                 }
             },

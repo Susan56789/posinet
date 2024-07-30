@@ -1,7 +1,7 @@
 <template>
     <div class="flex justify-center items-center min-h-screen bg-gray-100">
         <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
-            <h1 class="text-2xl font-bold mb-6 text-center">User Login</h1>
+            <h1 class="text-2xl font-bold mb-6 text-center">Admin Login</h1>
             <form @submit.prevent="login" class="space-y-4">
                 <input v-model="email" type="email" placeholder="Email"
                     class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -36,7 +36,7 @@
 import axios from 'axios';
 
 export default {
-    name: 'AuthPage',
+    name: 'AdminLogin',
     data() {
         return {
             email: '',
@@ -51,17 +51,17 @@ export default {
         },
         async login() {
             try {
-                const res = await axios.post('https://posinet.onrender.com/login/user', {
+                const res = await axios.post('https://posinet.onrender.com/login/admin', {
                     email: this.email,
                     password: this.password
                 });
-                const { token, user } = res.data;
+                const { token, admin } = res.data;
                 localStorage.setItem('token', token);
-                localStorage.setItem('role', user.role);
-                localStorage.setItem('userName', user.name);
-                localStorage.setItem('email', user.email);
+                localStorage.setItem('role', admin.role);
+                localStorage.setItem('userName', admin.name);
+                localStorage.setItem('email', admin.email);
 
-                this.$router.push('/sales');
+                this.$router.push('/admin');
             } catch (error) {
                 if (error.response) {
                     this.error = error.response.data || 'Login failed';
