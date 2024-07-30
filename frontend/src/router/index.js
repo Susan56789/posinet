@@ -24,6 +24,12 @@ const routes = [
                 meta: { breadcrumb: 'Admin Login', title: 'Admin Login' }
             },
             {
+                path: 'forgot-password',
+                name: 'ForgotPassword',
+                component: () => import('@/components/AuthPage/ForgotPassword.vue'),
+                meta: { breadcrumb: 'Forgot Password', title: 'Forgot Password' }
+            },
+            {
                 path: 'admin',
                 name: 'Admin',
                 component: () => import('@/components/AdminPage/index.vue'),

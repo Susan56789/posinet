@@ -18,7 +18,7 @@
                         <svg v-if="passwordFieldType === 'text'" class="h-5 w-5 text-gray-500" fill="none"
                             xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" stroke="currentColor">
                             <path
-                                d="M13.875 18.825a7.952 7.952 0 01-3.875 1.075A8 8 0 010 10a8 8 0 0110-7.8M10 6a4 4 0 110 8 4 4 0 010-8zm0 8a4 4 0 110-8 4 4 0 010 8zM10 10a7 7 0 100-14 7 7 0 000 14z" />
+                                d="M13.875 18.825a7.952 7.952 0 01-3.875 1.075A8 8 0 010 10a8 8 0 0110-7.8M10 6a4 4 0 110 8 4 4 0 010-8zm0 8a4 4 0 110 8 4 4 0 010-8zM10 10a7 7 0 100-14 7 7 0 000 14z" />
                         </svg>
                     </button>
                 </div>
@@ -28,6 +28,9 @@
                 </button>
             </form>
             <p v-if="error" class="text-red-500 text-center mt-4">{{ error }}</p>
+            <p class="text-center mt-4">
+                <router-link to="/forgot-password" class="text-blue-500 hover:underline">Forgot Password?</router-link>
+            </p>
         </div>
     </div>
 </template>
