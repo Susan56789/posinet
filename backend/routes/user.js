@@ -7,6 +7,7 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
     app.post('/api/users/register', async (req, res) => {
         try {
             const { name, email, password, phone } = req.body;
+            const role = "user"
 
             if (!name || !email || !password || !phone) {
                 return res.status(400).json({ message: 'All fields are required' });
@@ -19,7 +20,7 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
-            const newUser = { name, email, password: hashedPassword, phone };
+            const newUser = { name, email, password: hashedPassword, phone, role };
             const result = await users.insertOne(newUser);
 
             res.status(201).json(result);
