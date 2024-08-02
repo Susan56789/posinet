@@ -18,6 +18,9 @@ export default createStore({
         return {
             token: localStorage.getItem('token') || null,
             userName: localStorage.getItem('userName') || null,
+            userId: localStorage.getItem('userId') || null,
+            role: localStorage.getItem('role') || null,
+
         };
     },
     mutations: {
@@ -29,11 +32,16 @@ export default createStore({
             state.userName = userName;
             localStorage.setItem('userName', userName);
         },
+        setUserId(state, userId) {
+            state.userId = userId;
+            localStorage.setItem('userId', userId);
+        },
         clearAuthData(state) {
             state.token = null;
             state.userName = null;
             localStorage.removeItem('token');
             localStorage.removeItem('userName');
+            localStorage.removeItem('userId');
         }
     },
     getters: {

@@ -31,7 +31,7 @@ const routes = [
             },
             {
                 path: 'admin',
-                component: () => import('@/components/AdminPage/AdminLayout.vue'), // Assuming you have a layout component for Admin
+                component: () => import('@/components/AdminPage/AdminLayout.vue'),
                 meta: { breadcrumb: 'Admin', title: 'Admin', requiresAuth: true, role: 'admin' },
                 children: [
                     {
@@ -123,21 +123,12 @@ const router = createRouter({
     routes
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
     document.title = to.meta.title || 'Posinet POS';
 
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
 
-    if (to.matched.some(record => record.meta.requiresAuth)) {
-        if (!token) {
-            return next('/login/user');
-        } else if (to.meta.role && to.meta.role !== role) {
-            return next(`/login/${role}`);
-        }
-    }
 
-    next();
+
 });
 
 export default router;

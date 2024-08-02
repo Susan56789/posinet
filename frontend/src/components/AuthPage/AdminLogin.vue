@@ -89,12 +89,8 @@ export default {
                     email: this.email,
                     password: this.password
                 });
-                const { token, admin } = res.data;
-                localStorage.setItem('token', token);
-                localStorage.setItem('userId', admin.id);
-                localStorage.setItem('role', admin.role);
-                localStorage.setItem('userName', admin.name);
-                localStorage.setItem('email', admin.email);
+
+                localStorage.setItem('token', res.data.token);
 
                 this.$router.push('/admin');
             } catch (error) {
