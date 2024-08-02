@@ -72,8 +72,8 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
         try {
             const { email, newPassword, nationalId } = req.body;
 
-            if (!email || !newPassword, nationalId) {
-                return res.status(400).json({ message: "Email and new password are required" });
+            if (!email || !newPassword || !nationalId) {
+                return res.status(400).json({ message: "Email, National ID and new password are required" });
             }
 
             // Validate new password strength

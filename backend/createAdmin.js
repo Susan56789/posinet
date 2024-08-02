@@ -1,7 +1,7 @@
 // backend/createAdmin.js
-require('dotenv').config(); // Load environment variables from .env file
-const { connectDB } = require('./db'); // Ensure correct path
-const Admin = require('./models/Admin'); // Ensure correct path
+require('dotenv').config();
+const { connectDB } = require('./db');
+const Admin = require('./models/Admin');
 const bcrypt = require('bcryptjs');
 
 const createAdmin = async (email, password, otherFields) => {
