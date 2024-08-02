@@ -1,20 +1,15 @@
-// src/routes/auth.js
 const express = require('express');
+const { auth, admin } = require('../middleware/auth');
 const { register, loginUser, loginAdmin } = require('../controllers/auth');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const Admin = require('../models/Admin');
-
 const router = express.Router();
 
-
+// User and Admin Registration/Login Routes
 router.post('/register', register);
 router.post('/login/user', loginUser);
 router.post('/login/admin', loginAdmin);
 
 // Password reset route for users
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', auth, async (req, res) => {
     const { email, newPassword } = req.body;
     try {
         const user = await User.findOne({ email });
@@ -33,10 +28,10 @@ router.post('/reset-password', async (req, res) => {
 });
 
 // Admin change password route
-router.post('/admin/change-password', async (req, res) => {
+router.post('/admin/change-password', auth, admin, async (req, res) => {
     try {
         const { nationalId, newPassword } = req.body;
-        const adminId = req.admin.userId;
+        const adminId = req.user.userId;
 
         // Find the admin by ID
         const admin = await Admin.findById(adminId);

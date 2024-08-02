@@ -31,17 +31,8 @@ const routes = [
             },
             {
                 path: 'admin',
-                name: 'Admin',
-                component: () => import('@/components/AdminPage/index.vue'),
-                meta: { breadcrumb: 'Admin', title: 'Admin' },
-                beforeEnter: (to, from, next) => {
-                    const token = localStorage.getItem('token');
-                    const role = localStorage.getItem('role');
-                    if (!token || role !== 'admin') {
-                        return next('/login/admin');
-                    }
-                    next();
-                },
+                component: () => import('@/components/AdminPage/AdminLayout.vue'), // Assuming you have a layout component for Admin
+                meta: { breadcrumb: 'Admin', title: 'Admin', requiresAuth: true, role: 'admin' },
                 children: [
                     {
                         path: '',
@@ -79,90 +70,50 @@ const routes = [
                 path: 'sales',
                 name: 'Sales',
                 component: () => import('@/components/SalesPage/index.vue'),
-                meta: { breadcrumb: 'Sales', title: 'Sales' },
-                beforeEnter: (to, from, next) => {
-                    const token = localStorage.getItem('token');
-                    if (!token) return next('/login/user');
-                    next();
-                }
+                meta: { breadcrumb: 'Sales', title: 'Sales', requiresAuth: true }
             },
             {
                 path: 'inventory',
                 name: 'Inventory',
                 component: () => import('@/components/InventoryPage/index.vue'),
-                meta: { breadcrumb: 'Inventory', title: 'Inventory' },
-                beforeEnter: (to, from, next) => {
-                    const token = localStorage.getItem('token');
-                    if (!token) return next('/login/user');
-                    next();
-                }
+                meta: { breadcrumb: 'Inventory', title: 'Inventory', requiresAuth: true }
             },
             {
                 path: 'customers',
                 name: 'Customers',
                 component: () => import('@/components/CustomersPage/index.vue'),
-                meta: { breadcrumb: 'Customers', title: 'Customers' },
-                beforeEnter: (to, from, next) => {
-                    const token = localStorage.getItem('token');
-                    if (!token) return next('/login/user');
-                    next();
-                }
+                meta: { breadcrumb: 'Customers', title: 'Customers', requiresAuth: true }
             },
             {
                 path: 'suppliers',
                 name: 'Suppliers',
                 component: () => import('@/components/SuppliersPage/index.vue'),
-                meta: { breadcrumb: 'Suppliers', title: 'Suppliers' },
-                beforeEnter: (to, from, next) => {
-                    const token = localStorage.getItem('token');
-                    if (!token) return next('/login/user');
-                    next();
-                }
+                meta: { breadcrumb: 'Suppliers', title: 'Suppliers', requiresAuth: true }
             },
             {
                 path: 'item-repair',
                 name: 'ItemRepair',
                 component: () => import('@/components/ItemRepairPage/index.vue'),
-                meta: { breadcrumb: 'Item Repair', title: 'Item Repair' },
-                beforeEnter: (to, from, next) => {
-                    const token = localStorage.getItem('token');
-                    if (!token) return next('/login/user');
-                    next();
-                }
+                meta: { breadcrumb: 'Item Repair', title: 'Item Repair', requiresAuth: true }
             },
             {
                 path: 'expenses',
                 name: 'Expenses',
                 component: () => import('@/components/ExpensesPage/index.vue'),
-                meta: { breadcrumb: 'Expenses', title: 'Expenses' },
-                beforeEnter: (to, from, next) => {
-                    const token = localStorage.getItem('token');
-                    if (!token) return next('/login/user');
-                    next();
-                }
+                meta: { breadcrumb: 'Expenses', title: 'Expenses', requiresAuth: true }
             },
             {
                 path: 'reports',
                 name: 'Reports',
                 component: () => import('@/components/ReportsPage/index.vue'),
-                meta: { breadcrumb: 'Reports', title: 'Reports' },
-                beforeEnter: (to, from, next) => {
-                    const token = localStorage.getItem('token');
-                    if (!token) return next('/login/user');
-                    next();
-                }
+                meta: { breadcrumb: 'Reports', title: 'Reports', requiresAuth: true }
             },
             {
                 path: 'profile',
                 name: 'Profile',
                 component: () => import('@/components/UserProfile/index.vue'),
-                meta: { breadcrumb: 'Profile', title: 'Profile' },
-                beforeEnter: (to, from, next) => {
-                    const token = localStorage.getItem('token');
-                    if (!token) return next('/login/user');
-                    next();
-                }
-            },
+                meta: { breadcrumb: 'Profile', title: 'Profile', requiresAuth: true }
+            }
         ]
     }
 ];
@@ -174,6 +125,18 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
     document.title = to.meta.title || 'Posinet POS';
+
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+
+    if (to.matched.some(record => record.meta.requiresAuth)) {
+        if (!token) {
+            return next('/login/user');
+        } else if (to.meta.role && to.meta.role !== role) {
+            return next(`/login/${role}`);
+        }
+    }
+
     next();
 });
 

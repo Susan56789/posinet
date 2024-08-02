@@ -24,6 +24,7 @@ const register = async (req, res) => {
         const { password: _, ...userWithoutPassword } = user.toObject();
         res.status(201).send(userWithoutPassword);
     } catch (error) {
+        console.error('Error during user registration:', error);
         res.status(400).send(error.message);
     }
 };
