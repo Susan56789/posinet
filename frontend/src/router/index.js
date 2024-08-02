@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
+
 const routes = [
     {
         path: '/',
@@ -125,9 +126,6 @@ const router = createRouter({
 
 router.beforeEach((to) => {
     document.title = to.meta.title || 'Posinet POS';
-
-
-
 
 });
 

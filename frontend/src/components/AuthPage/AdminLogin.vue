@@ -92,6 +92,8 @@ export default {
 
                 localStorage.setItem('token', res.data.token);
 
+                axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
+
                 this.$router.push('/admin');
             } catch (error) {
                 this.error = error.response?.data?.message || 'Login failed. Please check your credentials and try again.';

@@ -8,19 +8,19 @@
                 <h2 class="text-xl font-semibold mb-4">Quick Stats</h2>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-blue-600">{{ totalProducts }}</p>
+                        <p class="text-2xl font-bold text-blue-600">{{ stats.productCount }}</p>
                         <p class="text-gray-600">Products</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-green-600">{{ totalUsers }}</p>
+                        <p class="text-2xl font-bold text-green-600">{{ stats.userCount }}</p>
                         <p class="text-gray-600">Users</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-yellow-600">${{ totalSales }}</p>
+                        <p class="text-2xl font-bold text-yellow-600">${{ stats.totalSales }}</p>
                         <p class="text-gray-600">Total Sales</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-purple-600">{{ pendingOrders }}</p>
+                        <p class="text-2xl font-bold text-purple-600">{{ stats.pendingOrders }}</p>
                         <p class="text-gray-600">Pending Orders</p>
                     </div>
                 </div>
@@ -90,10 +90,12 @@ export default {
     name: 'AdminDashboard',
     data() {
         return {
-            totalProducts: 0,
-            totalUsers: 0,
-            totalSales: 0,
-            pendingOrders: 0,
+            stats: {
+                productCount: 0,
+                userCount: 0,
+                totalSales: 0,
+                pendingOrders: 0,
+            },
             recentActivities: [],
             recentSales: [],
         };
@@ -117,21 +119,19 @@ export default {
             };
             return colors[status] || 'bg-gray-200 text-gray-800';
         },
-        async fetchStats() {
+        async fetchDashboardData() {
             try {
-                const [productRes, userRes, salesRes, pendingOrdersRes] = await Promise.all([
-                    axios.get('https://posinet.onrender.com/api/products/count'),
-                    axios.get('https://posinet.onrender.com/api/users/count'),
-                    axios.get('https://posinet.onrender.com/api/sales/total'),
-                    axios.get('https://posinet.onrender.com/api/orders/pending/count'),
-                ]);
-
-                this.totalProducts = productRes.data.count;
-                this.totalUsers = userRes.data.count;
-                this.totalSales = salesRes.data.total;
-                this.pendingOrders = pendingOrdersRes.data.count;
+                const { data } = await axios.get('https://posinet.onrender.com/api/admin/dashboard', {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                this.stats.productCount = data.productCount;
+                this.stats.userCount = data.userCount;
+                this.stats.totalSales = data.totalSales;
+                this.stats.pendingOrders = data.pendingOrders;
             } catch (error) {
-                console.error('Error fetching stats:', error);
+                console.error('Error fetching dashboard data:', error);
             }
         },
         async fetchRecentActivities() {
@@ -161,7 +161,7 @@ export default {
         },
     },
     mounted() {
-        this.fetchStats();
+        this.fetchDashboardData();
         this.fetchRecentActivities();
         this.fetchRecentSales();
     },
