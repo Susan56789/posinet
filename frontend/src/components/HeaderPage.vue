@@ -1,57 +1,53 @@
 <template>
-    <div class="header flex justify-between items-center p-4 bg-gray-200">
-        <div class="date-time">{{ currentDateTime }}</div>
-        <div class="user-info flex items-center">
-            <span class="mr-4 cursor-pointer" @click="goToProfile">{{ userName }}</span>
-            <button @click="logout" class="bg-red-500 text-white py-1 px-3 rounded-lg hover:bg-red-600">
-                Logout
-            </button>
+    <header class="bg-blue-500 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Posinet POS</h1>
+            <div v-if="isLoggedIn" class="flex items-center space-x-4">
+                <router-link :to="{ name: 'Profile' }" class="hover:underline">
+                    Welcome, {{ userName }}
+                </router-link>
+                <span>{{ currentDate }}</span>
+                <button @click="logout"
+                    class="bg-white text-blue-500 px-4 py-2 rounded hover:bg-blue-100 transition-colors">
+                    Logout
+                </button>
+            </div>
         </div>
-    </div>
+    </header>
 </template>
 
 <script>
-import { mapGetters, mapMutations } from 'vuex';
+import { useRouter } from 'vue-router';
+import { computed, ref } from 'vue';
 
 export default {
-    data() {
-        return {
-            currentDateTime: new Date().toLocaleString(),
+    name: 'HeaderPage',
+    setup() {
+        const router = useRouter();
+        const currentDate = ref(new Date().toLocaleDateString());
+
+        let isLoggedIn = computed(() => !!localStorage.getItem('token'));
+        const userName = computed(() => localStorage.getItem('userName') || 'User');
+
+        const logout = () => {
+            // Clear all authentication-related data
+            localStorage.removeItem('token');
+            localStorage.removeItem('userName');
+
+            // Clear any other auth-related data if necessary
+            // For example, if you're using Vuex for state management:
+            // store.dispatch('auth/logout');
+            isLoggedIn = false;
+            // Redirect to the user login page
+            router.push({ name: 'UserLogin' });
         };
-    },
-    computed: {
-        ...mapGetters(['isLoggedIn', 'getUserName']),
-        userName() {
-            return this.getUserName || 'User';
-        }
-    },
-    mounted() {
-        this.interval = setInterval(() => {
-            this.currentDateTime = new Date().toLocaleString();
-        }, 1000);
-    },
-    beforeUnmount() {
-        clearInterval(this.interval);
-    },
-    methods: {
-        ...mapMutations(['clearAuthData']),
-        logout() {
-            this.clearAuthData();
-            this.$router.push('/login');
-        },
-        goToProfile() {
-            this.$router.push('/profile');
-        }
+
+        return {
+            isLoggedIn,
+            userName,
+            currentDate,
+            logout
+        };
     }
 };
 </script>
-
-<style scoped>
-.header {
-    position: fixed;
-    width: 100%;
-    top: 0;
-    left: 0;
-    z-index: 1000;
-}
-</style>

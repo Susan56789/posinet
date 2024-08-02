@@ -54,12 +54,11 @@ export default {
                     email: this.email,
                     password: this.password
                 });
-                const { token, user } = res.data;
-                localStorage.setItem('token', token);
-                localStorage.setItem('userId', user.id);
-                localStorage.setItem('role', user.role);
-                localStorage.setItem('userName', user.name);
-                localStorage.setItem('email', user.email);
+                localStorage.setItem('token', res.data.token);
+                localStorage.setItem('userName', res.data.name);
+                console.log(res)
+
+                axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
 
                 this.$router.push('/sales');
             } catch (error) {

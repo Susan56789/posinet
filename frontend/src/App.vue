@@ -1,20 +1,17 @@
 <template>
   <div id="app">
-    <Header v-if="isLoggedIn" />
+    <Header />
     <router-view />
   </div>
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
+
 import Header from './components/HeaderPage.vue';
 
 export default {
   components: {
     Header
-  },
-  computed: {
-    ...mapGetters(['isLoggedIn'])
   }
 };
 </script>

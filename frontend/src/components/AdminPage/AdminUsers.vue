@@ -1,5 +1,5 @@
 <template>
-    <div class="manage-users">
+    <div class="manage-users  min-h-screen">
         <h1 class="text-2xl font-bold mb-4">Manage Users</h1>
         <button @click="openAddUserModal" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mb-4">
             Add User
