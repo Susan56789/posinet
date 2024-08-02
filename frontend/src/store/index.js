@@ -1,9 +1,6 @@
 // store/index.js
-import Vue from 'vue';
-import Vuex from 'vuex';
+import { createStore } from 'vuex';
 import jwtDecode from 'jwt-decode';
-
-Vue.use(Vuex);
 
 function isTokenValid(token) {
     if (!token) return false;
@@ -16,10 +13,12 @@ function isTokenValid(token) {
     }
 }
 
-export default new Vuex.Store({
-    state: {
-        token: localStorage.getItem('token') || null,
-        userName: localStorage.getItem('userName') || null,
+export default createStore({
+    state() {
+        return {
+            token: localStorage.getItem('token') || null,
+            userName: localStorage.getItem('userName') || null,
+        };
     },
     mutations: {
         setToken(state, token) {
@@ -38,7 +37,7 @@ export default new Vuex.Store({
         }
     },
     getters: {
-        isLoggedIn: state => isTokenValid(state.token),
-        getUserName: state => state.userName,
+        isLoggedIn: (state) => isTokenValid(state.token),
+        getUserName: (state) => state.userName,
     }
 });
