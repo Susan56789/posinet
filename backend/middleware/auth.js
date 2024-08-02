@@ -1,9 +1,28 @@
 const jwt = require('jsonwebtoken');
 
+// Generate a new token
+const generateToken = (user) => {
+    const payload = {
+        userId: user._id,
+        role: user.role
+    };
+    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+};
+
 // Authentication Middleware
 const auth = (req, res, next) => {
     const authHeader = req.header('Authorization');
-    if (!authHeader) return res.status(401).send('Access denied. No token provided.');
+
+    if (!authHeader) {
+        // If no token, create a new one for an anonymous user
+        const anonymousUser = { _id: 'anonymous', role: 'guest' };
+        const newToken = generateToken(anonymousUser);
+
+        // Send new token in response header
+        res.setHeader('Authorization', `Bearer ${newToken}`);
+        req.user = anonymousUser;
+        return next();
+    }
 
     const token = authHeader.replace('Bearer ', '');
     try {
