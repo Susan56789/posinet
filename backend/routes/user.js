@@ -1,5 +1,8 @@
+const express = require('express');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-module.exports = (client, app, authenticate, bcrypt, jwt) => {
+module.exports = (client, app, authenticate) => {
     const database = client.db("posinet");
     const users = database.collection("users");
 
@@ -7,7 +10,7 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
     app.post('/api/users/register', async (req, res) => {
         try {
             const { name, email, password, phone } = req.body;
-            const role = "user"
+            const role = "user";
 
             if (!name || !email || !password || !phone) {
                 return res.status(400).json({ message: 'All fields are required' });
@@ -50,7 +53,7 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
             }
 
             const token = jwt.sign(
-                { _id: user._id, name: user.name, email: user.email, phone: user.phone },
+                { _id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role },
                 process.env.JWT_SECRET || 'secretkey',
                 { expiresIn: '1h' }
             );
@@ -62,14 +65,58 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
         }
     });
 
-    // User Profile Endpoint
-    app.get('/api/users/profile', authenticate, (req, res) => {
-        const { _id, name, email, phone } = req.user;
-        res.json({ _id, name, email, phone });
+    // Fetch All Users Endpoint
+    app.get('/api/users', authenticate, async (req, res) => {
+        try {
+            const usersList = await users.find().toArray();
+            res.json(usersList);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            res.status(500).json({ message: 'Error fetching users', error });
+        }
     });
 
+    // Update User Endpoint
+    app.put('/api/users/:id', authenticate, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { name, email, role, phone } = req.body;
 
-    app.post('/api/user/reset-password', async (req, res) => {
+            if (!name || !email || !role || !phone) {
+                return res.status(400).json({ message: 'All fields are required' });
+            }
+
+            const updatedUser = { name, email, role, phone };
+            await users.updateOne({ _id: new ObjectId(id) }, { $set: updatedUser });
+
+            res.json({ message: 'User updated successfully' });
+        } catch (error) {
+            console.error('Error updating user:', error);
+            res.status(500).json({ message: 'Error updating user', error });
+        }
+    });
+
+    // Delete User Endpoint
+    app.delete('/api/users/:id', authenticate, async (req, res) => {
+        try {
+            const { id } = req.params;
+            await users.deleteOne({ _id: new ObjectId(id) });
+
+            res.json({ message: 'User deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            res.status(500).json({ message: 'Error deleting user', error });
+        }
+    });
+
+    // User Profile Endpoint
+    app.get('/api/users/profile', authenticate, (req, res) => {
+        const { _id, name, email, phone, role } = req.user;
+        res.json({ _id, name, email, phone, role });
+    });
+
+    // Password Reset Endpoint
+    app.post('/api/users/reset-password', async (req, res) => {
         try {
             const { email, newPassword } = req.body;
 
@@ -83,8 +130,6 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
             }
 
             // Find the user by email
-            const database = client.db("posinet");
-            const users = database.collection("admin");
             const user = await users.findOne({ email });
 
             if (!user) {
@@ -92,8 +137,7 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
             }
 
             // Hash the new password
-            const saltRounds = 12;
-            const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+            const hashedNewPassword = await bcrypt.hash(newPassword, 12);
 
             // Update the password in the database
             await users.updateOne(
@@ -102,10 +146,9 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
             );
 
             res.json({ message: "Password reset successfully" });
-        } catch (err) {
-            console.error("Error resetting password:", err);
+        } catch (error) {
+            console.error("Error resetting password:", error);
             res.status(500).json({ message: "Internal server error" });
         }
-    })
-
+    });
 }

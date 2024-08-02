@@ -1,4 +1,3 @@
-<!-- @/components/AdminPage/Dashboard.vue -->
 <template>
     <div class="admin-dashboard">
         <h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
@@ -85,26 +84,18 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
     name: 'AdminDashboard',
     data() {
         return {
-            totalProducts: 150,
-            totalUsers: 1000,
-            totalSales: 50000,
-            pendingOrders: 25,
-            recentActivities: [
-                { id: 1, type: 'product', description: 'New product added: iPhone 12' },
-                { id: 2, type: 'user', description: 'New user registered: John Doe' },
-                { id: 3, type: 'order', description: 'Order #1234 marked as shipped' },
-                { id: 4, type: 'report', description: 'Monthly sales report generated' },
-            ],
-            recentSales: [
-                { id: 1, orderId: '#1234', customer: 'John Doe', amount: 299.99, status: 'Completed' },
-                { id: 2, orderId: '#1235', customer: 'Jane Smith', amount: 199.99, status: 'Pending' },
-                { id: 3, orderId: '#1236', customer: 'Bob Johnson', amount: 499.99, status: 'Processing' },
-                { id: 4, orderId: '#1237', customer: 'Alice Brown', amount: 99.99, status: 'Shipped' },
-            ],
+            totalProducts: 0,
+            totalUsers: 0,
+            totalSales: 0,
+            pendingOrders: 0,
+            recentActivities: [],
+            recentSales: [],
         };
     },
     methods: {
@@ -126,6 +117,39 @@ export default {
             };
             return colors[status] || 'bg-gray-200 text-gray-800';
         },
+        async fetchStats() {
+            try {
+                const [productRes, userRes, salesRes, pendingOrdersRes] = await Promise.all([
+                    axios.get('https://posinet.onrender.com/api/products/count'),
+                    axios.get('https://posinet.onrender.com/api/users/count'),
+                    axios.get('https://posinet.onrender.com/api/sales/total'),
+                    axios.get('https://posinet.onrender.com/api/orders/pending/count'),
+                ]);
+
+                this.totalProducts = productRes.data.count;
+                this.totalUsers = userRes.data.count;
+                this.totalSales = salesRes.data.total;
+                this.pendingOrders = pendingOrdersRes.data.count;
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
+        },
+        async fetchRecentActivities() {
+            try {
+                const response = await axios.get('https://posinet.onrender.com/api/activities/recent');
+                this.recentActivities = response.data;
+            } catch (error) {
+                console.error('Error fetching recent activities:', error);
+            }
+        },
+        async fetchRecentSales() {
+            try {
+                const response = await axios.get('https://posinet.onrender.com/api/sales/recent');
+                this.recentSales = response.data;
+            } catch (error) {
+                console.error('Error fetching recent sales:', error);
+            }
+        },
         addProduct() {
             // Implement add product functionality
         },
@@ -136,5 +160,18 @@ export default {
             // Implement view reports functionality
         },
     },
+    mounted() {
+        this.fetchStats();
+        this.fetchRecentActivities();
+        this.fetchRecentSales();
+    },
 };
 </script>
+
+<style scoped>
+.admin-dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+</style>
