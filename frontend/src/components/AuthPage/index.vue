@@ -55,8 +55,9 @@ export default {
                     password: this.password
                 });
                 localStorage.setItem('token', res.data.token);
-                localStorage.setItem('userName', res.data.name);
-                console.log(res)
+                localStorage.setItem('userName', res.data.name || 'User');
+                localStorage.setItem('role', res.data.role || 'user');
+
 
                 axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
 
