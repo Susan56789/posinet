@@ -64,6 +64,9 @@ const run = async () => {
         // Import and initialize routes
         require('./routes/admin')(client, app, authenticate, bcrypt, jwt);
         require('./routes/user')(client, app, authenticate, bcrypt, jwt);
+        require('./routes/products')(client, app, authenticate);
+        require('./routes/sales')(client, app, authenticate);
+        require('./routes/reports')(client, app, authenticate);
 
         // Start the server
         app.listen(PORT, () => {

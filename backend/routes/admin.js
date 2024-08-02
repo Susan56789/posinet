@@ -3,6 +3,25 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
     const database = client.db("posinet");
     const users = database.collection("admin");
 
+    app.get('/api/admin/dashboard', authenticate, async (req, res) => {
+        try {
+            const productCount = await database.collection('products').countDocuments();
+            const userCount = await database.collection('users').countDocuments();
+            const totalSales = await database.collection('sales').aggregate([{ $group: { _id: null, total: { $sum: "$amount" } } }]).toArray();
+            const pendingOrders = await database.collection('sales').countDocuments({ status: 'Pending' });
+
+            res.status(200).json({
+                productCount,
+                userCount,
+                totalSales: totalSales[0]?.total || 0,
+                pendingOrders
+            });
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            res.status(500).json({ message: 'Internal server error' });
+        }
+    });
+
     // User Registration Endpoint
     app.post('/api/admin/register', async (req, res) => {
         try {

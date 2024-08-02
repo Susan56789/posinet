@@ -68,7 +68,7 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
     });
 
 
-    app.post('/api/users/reset-password', async (req, res) => {
+    app.post('/api/user/reset-password', async (req, res) => {
         try {
             const { email, newPassword } = req.body;
 
@@ -83,7 +83,7 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
 
             // Find the user by email
             const database = client.db("posinet");
-            const users = database.collection("users");
+            const users = database.collection("admin");
             const user = await users.findOne({ email });
 
             if (!user) {
@@ -105,21 +105,6 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
             console.error("Error resetting password:", err);
             res.status(500).json({ message: "Internal server error" });
         }
-    });
-
-    app.post('/api/users/reset-password/:token', async (req, res) => {
-        try {
-            const { token } = req.params;
-            const { newPassword } = req.body;
-            const decoded = jwt.verify(token, 'resetsecretkey');
-
-            const hashedPassword = await bcrypt.hash(newPassword, 10);
-            await users.updateOne({ _id: decoded._id }, { $set: { password: hashedPassword } });
-
-            res.status(200).json({ message: 'Password reset successfully' });
-        } catch (error) {
-            res.status(500).json({ message: "Error resetting password", error });
-        }
-    });
+    })
 
 }
