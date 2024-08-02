@@ -40,6 +40,11 @@ const routes = [
                         name: 'AdminDashboard',
                         component: () => import('@/components/AdminPage/index.vue'),
                         meta: { breadcrumb: 'Dashboard', title: 'Admin Dashboard' }
+                    }, {
+                        path: 'profile',
+                        name: 'AdminProfile',
+                        component: () => import('@/components/AdminPage/AdminProfile.vue'),
+                        meta: { breadcrumb: 'Admin Profile', title: 'Admin Profile' }
                     },
                     {
                         path: 'users',

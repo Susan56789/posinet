@@ -19,6 +19,10 @@
             <header class="bg-white shadow p-4">
                 <div class="flex justify-between items-center">
                     <h1 class="text-xl font-semibold">{{ $route.meta.title }}</h1>
+                    <router-link :to="{ name: 'AdminProfile' }" class="hover:underline">
+                        Welcome, {{ userName }}
+                    </router-link>
+                    <span>{{ currentDate }}</span>
                     <button @click="logout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
                         Logout
                     </button>
@@ -41,13 +45,17 @@ export default {
     setup() {
         const router = useRouter();
         const token = ref('');
+        const currentDate = ref(new Date().toLocaleDateString());
 
         const menuItems = [
+            { name: 'Profile', path: '/admin/profile' },
             { name: 'Dashboard', path: '/admin' },
             { name: 'Manage Users', path: '/admin/users' },
             { name: 'Manage Products', path: '/admin/products' },
             { name: 'Manage Permissions', path: '/admin/permissions' },
             { name: 'View Reports', path: '/admin/reports' },
+
+
         ];
 
         onMounted(() => {
@@ -68,6 +76,7 @@ export default {
         return {
             menuItems,
             logout,
+            currentDate,
         };
     },
 };
