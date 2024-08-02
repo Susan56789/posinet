@@ -50,7 +50,7 @@ export default {
 
             this.isLoading = true;
             try {
-                const res = await axios.post('https://posinet.onrender.com/login/user', {
+                const res = await axios.post('https://posinet.onrender.com/api/users/login', {
                     email: this.email,
                     password: this.password
                 });

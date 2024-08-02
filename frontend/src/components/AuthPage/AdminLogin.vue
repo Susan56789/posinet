@@ -85,7 +85,7 @@ export default {
         async login() {
             this.error = '';
             try {
-                const res = await axios.post('https://posinet.onrender.com/login/admin', {
+                const res = await axios.post('https://posinet.onrender.com/api/admin/login', {
                     email: this.email,
                     password: this.password
                 });
@@ -109,7 +109,7 @@ export default {
                 return;
             }
             try {
-                await axios.post('https://posinet.onrender.com/admin/reset-password', {
+                await axios.post('https://posinet.onrender.com/api/admin/reset-password', {
                     email: this.email,
                     nationalId: this.nationalId,
                     newPassword: this.newPassword

@@ -34,7 +34,7 @@ export default {
     methods: {
         async resetPassword() {
             try {
-                const res = await axios.post('https://posinet.onrender.com/reset-password', {
+                const res = await axios.post('https://posinet.onrender.com/api/users/reset-password', {
                     email: this.email,
                     newPassword: this.newPassword
                 });
