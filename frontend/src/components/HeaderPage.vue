@@ -11,12 +11,19 @@
 </template>
 
 <script>
+import { mapGetters, mapMutations } from 'vuex';
+
 export default {
     data() {
         return {
             currentDateTime: new Date().toLocaleString(),
-            userName: localStorage.getItem('userName') || 'User',
         };
+    },
+    computed: {
+        ...mapGetters(['isLoggedIn', 'getUserName']),
+        userName() {
+            return this.getUserName || 'User';
+        }
     },
     mounted() {
         this.interval = setInterval(() => {
@@ -27,10 +34,9 @@ export default {
         clearInterval(this.interval);
     },
     methods: {
+        ...mapMutations(['clearAuthData']),
         logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('userName');
-            localStorage.removeItem('role');
+            this.clearAuthData();
             this.$router.push('/login');
         },
         goToProfile() {
@@ -40,11 +46,12 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .header {
     position: fixed;
     width: 100%;
     top: 0;
     left: 0;
+    z-index: 1000;
 }
 </style>

@@ -1,7 +1,8 @@
-const User = require('../models/User');
-const Admin = require('../models/Admin');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const User = require('../models/User');
+const Admin = require('../models/Admin');
+const { generateToken } = require('../middleware/auth');
 
 // Register function for users
 const register = async (req, res) => {
@@ -11,7 +12,7 @@ const register = async (req, res) => {
         // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).send('User already exists');
+            return res.status(400).json({ message: 'User already exists' });
         }
 
         // Hash the password before saving the user
@@ -22,10 +23,10 @@ const register = async (req, res) => {
 
         // Return the newly created user (without the password)
         const { password: _, ...userWithoutPassword } = user.toObject();
-        res.status(201).send(userWithoutPassword);
+        res.status(201).json(userWithoutPassword);
     } catch (error) {
         console.error('Error during user registration:', error);
-        res.status(400).send(error.message);
+        res.status(400).json({ message: error.message });
     }
 };
 
@@ -34,31 +35,22 @@ const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        console.log('User login attempt for email:', email);
-
         // Check in User collection
         const user = await User.findOne({ email });
-        console.log('User found in User collection:', user);
 
         // If user not found
         if (!user) {
-            return res.status(404).send('User not found');
+            return res.status(404).json({ message: 'User not found' });
         }
 
         // Compare the password with the hashed password in the database
         const isMatch = await bcrypt.compare(password, user.password);
-        console.log('Password match result:', isMatch);
-
         if (!isMatch) {
-            return res.status(400).send('Invalid credentials');
+            return res.status(400).json({ message: 'Invalid credentials' });
         }
 
         // Generate a JWT token
-        const token = jwt.sign(
-            { userId: user._id, role: 'user' },
-            process.env.JWT_SECRET,
-            { expiresIn: '1h' }
-        );
+        const token = generateToken({ _id: user._id, role: 'user' });
 
         // Prepare the response object
         const response = {
@@ -71,10 +63,10 @@ const loginUser = async (req, res) => {
             }
         };
 
-        res.status(200).send(response);
+        res.status(200).json(response);
     } catch (error) {
         console.error('Error during user login:', error);
-        res.status(400).send(error.message);
+        res.status(400).json({ message: error.message });
     }
 };
 
@@ -83,31 +75,22 @@ const loginAdmin = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        console.log('Admin login attempt for email:', email);
-
         // Check in Admin collection
         const admin = await Admin.findOne({ email });
-        console.log('Admin found in Admin collection:', admin);
 
         // If admin not found
         if (!admin) {
-            return res.status(404).send('Admin not found');
+            return res.status(404).json({ message: 'Admin not found' });
         }
 
         // Compare the password with the hashed password in the database
         const isMatch = await bcrypt.compare(password, admin.password);
-        console.log('Password match result:', isMatch);
-
         if (!isMatch) {
-            return res.status(400).send('Invalid credentials');
+            return res.status(400).json({ message: 'Invalid credentials' });
         }
 
         // Generate a JWT token
-        const token = jwt.sign(
-            { userId: admin._id, role: 'admin' },
-            process.env.JWT_SECRET,
-            { expiresIn: '1h' }
-        );
+        const token = generateToken({ _id: admin._id, role: 'admin' });
 
         // Prepare the response object
         const response = {
@@ -120,10 +103,10 @@ const loginAdmin = async (req, res) => {
             }
         };
 
-        res.status(200).send(response);
+        res.status(200).json(response);
     } catch (error) {
         console.error('Error during admin login:', error);
-        res.status(400).send(error.message);
+        res.status(400).json({ message: error.message });
     }
 };
 

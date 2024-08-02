@@ -6,6 +6,7 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex';
 import Header from './components/HeaderPage.vue';
 
 export default {
@@ -13,14 +14,12 @@ export default {
     Header
   },
   computed: {
-    isLoggedIn() {
-      return !!localStorage.getItem('token');
-    }
+    ...mapGetters(['isLoggedIn'])
   }
 };
 </script>
 
-<style>
+<style scoped>
 body {
   padding-top: 50px;
   /* Adjust this based on your header height */

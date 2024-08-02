@@ -1,4 +1,11 @@
 const jwt = require('jsonwebtoken');
+const { MongoClient, ObjectId } = require('mongodb');
+const User = require('../models/User');
+const Admin = require('../models/Admin');
+
+// MongoDB client setup
+const uri = process.env.MONGODB_URI;
+const client = new MongoClient(uri);
 
 // Generate a new token
 const generateToken = (user) => {
@@ -10,34 +17,32 @@ const generateToken = (user) => {
 };
 
 // Authentication Middleware
-const auth = (req, res, next) => {
-    const authHeader = req.header('Authorization');
+const auth = async (req, res, next) => {
+    const token = req.header('Authorization')?.split(' ')[1];
+    if (!token) return res.status(401).json({ message: 'Access denied. No token provided.' });
 
-    if (!authHeader) {
-        // If no token, create a new one for an anonymous user
-        const anonymousUser = { _id: 'anonymous', role: 'guest' };
-        const newToken = generateToken(anonymousUser);
-
-        // Send new token in response header
-        res.setHeader('Authorization', `Bearer ${newToken}`);
-        req.user = anonymousUser;
-        return next();
-    }
-
-    const token = authHeader.replace('Bearer ', '');
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
+        const database = client.db('posinet');
+        const users = database.collection('users');
+        const admins = database.collection('admin');
+        const user = await users.findOne({ _id: new ObjectId(decoded._id) });
+        const admin = await admins.findOne({ _id: new ObjectId(decoded._id) });
+
+        if (!user) return res.status(400).json({ message: 'Invalid token.' });
+        if (!admin) return res.status(400).json({ message: 'Invalid token.' });
+
+        req.user = user;
         next();
-    } catch (ex) {
-        res.status(400).send('Invalid token.');
+    } catch (err) {
+        res.status(400).json({ message: 'Invalid token.' });
     }
 };
 
 // Admin Authorization Middleware
 const admin = (req, res, next) => {
-    if (!req.user || req.user.role !== 'admin') return res.status(403).send('Access denied. Admins only.');
+    if (!req.user || req.user.role !== 'admin') return res.status(403).json({ message: 'Access denied. Admins only.' });
     next();
 };
 
-module.exports = { auth, admin };
+module.exports = { auth, admin, generateToken };
