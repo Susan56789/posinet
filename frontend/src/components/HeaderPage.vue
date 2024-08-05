@@ -17,29 +17,22 @@
 </template>
 
 <script>
-import { useRouter } from 'vue-router';
+
 import { computed, ref } from 'vue';
+import { useStore } from 'vuex';
 
 export default {
     name: 'HeaderPage',
     setup() {
-        const router = useRouter();
+
+        const store = useStore();
         const currentDate = ref(new Date().toLocaleDateString());
 
-        let isLoggedIn = computed(() => !!localStorage.getItem('token'));
-        const userName = computed(() => localStorage.getItem('userName') || 'User');
+        const isLoggedIn = computed(() => store.getters.isLoggedIn);
+        const userName = computed(() => store.getters.getUserName);
 
         const logout = () => {
-            // Clear all authentication-related data
-            localStorage.removeItem('token');
-            localStorage.removeItem('userName');
-
-            // Clear any other auth-related data if necessary
-            // For example, if you're using Vuex for state management:
-            // store.dispatch('auth/logout');
-            isLoggedIn = false;
-            // Redirect to the user login page
-            router.push({ name: 'UserLogin' });
+            store.dispatch('autoLogout');
         };
 
         return {

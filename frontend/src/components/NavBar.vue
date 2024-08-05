@@ -12,11 +12,15 @@
                                 <i :class="['mr-2', item.icon]"></i> {{ item.label }}
                             </router-link>
                         </li>
+                        <li>
+                            <button @click="logout" class="text-white flex items-center hover:text-gray-300">
+                                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                            </button>
+                        </li>
                     </ul>
                 </div>
             </div>
         </div>
-        <!-- Mobile menu -->
         <div :class="{ 'hidden': !isMenuOpen, 'block': isMenuOpen }" class="lg:hidden">
             <ul class="pt-2 pb-3 space-y-1">
                 <li v-for="(item, index) in menuItems" :key="index">
@@ -24,6 +28,12 @@
                         class="text-white block px-3 py-2 rounded-md text-base font-medium hover:text-gray-300 hover:bg-gray-700">
                         <i :class="['mr-2', item.icon]"></i> {{ item.label }}
                     </router-link>
+                </li>
+                <li>
+                    <button @click="logout"
+                        class="text-white block px-3 py-2 rounded-md text-base font-medium hover:text-gray-300 hover:bg-gray-700">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                    </button>
                 </li>
             </ul>
         </div>
@@ -49,6 +59,10 @@ export default {
     methods: {
         toggleMenu() {
             this.isMenuOpen = !this.isMenuOpen;
+        },
+        logout() {
+            this.$store.commit('clearAuthData');
+            this.$router.push('/login/user');
         }
     }
 };

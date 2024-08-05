@@ -1,5 +1,5 @@
 import { createStore } from 'vuex';
-import jwtDecode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 
 function isTokenValid(token) {
     if (!token) return false;

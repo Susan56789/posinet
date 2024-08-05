@@ -27,7 +27,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+
+import { mapActions } from 'vuex';
 
 export default {
     name: 'AuthPage',
@@ -41,6 +42,7 @@ export default {
         };
     },
     methods: {
+        ...mapActions(['loginUser']),
         togglePasswordVisibility() {
             this.passwordFieldType = this.passwordFieldType === 'password' ? 'text' : 'password';
         },
@@ -50,17 +52,7 @@ export default {
 
             this.isLoading = true;
             try {
-                const res = await axios.post('https://posinet.onrender.com/api/users/login', {
-                    email: this.email,
-                    password: this.password
-                });
-                localStorage.setItem('token', res.data.token);
-                localStorage.setItem('userName', res.data.name || 'User');
-                localStorage.setItem('role', res.data.role || 'user');
-
-
-                axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-
+                await this.loginUser({ email: this.email, password: this.password });
                 this.$router.push('/sales');
             } catch (error) {
                 this.error = error.response?.data?.message || 'Login failed. Please check your credentials and try again.';

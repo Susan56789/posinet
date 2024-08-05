@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <Header v-if="role = user" />
+    <Header v-if="isLoggedIn" />
     <router-view />
   </div>
 </template>
@@ -8,10 +8,17 @@
 <script>
 
 import Header from './components/HeaderPage.vue';
+import { computed } from 'vue';
+import { useStore } from 'vuex';
 
 export default {
   components: {
     Header
+  },
+  setup() {
+    const store = useStore();
+    const isLoggedIn = computed(() => store.getters.isLoggedIn);
+    return { isLoggedIn };
   }
 };
 </script>
