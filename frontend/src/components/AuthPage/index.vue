@@ -2,7 +2,7 @@
     <div class="flex justify-center items-center min-h-screen bg-gray-100">
         <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
             <h1 class="text-2xl font-bold mb-6 text-center">User Login</h1>
-            <form @submit.prevent="login" class="space-y-4">
+            <form @submit.prevent="handleLogin" class="space-y-4">
                 <input v-model.trim="email" type="email" placeholder="Email"
                     class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 <div class="relative">
@@ -27,7 +27,6 @@
 </template>
 
 <script>
-
 import { mapActions } from 'vuex';
 
 export default {
@@ -42,20 +41,50 @@ export default {
         };
     },
     methods: {
-        ...mapActions(['loginUser']),
+        ...mapActions(['login']),
         togglePasswordVisibility() {
             this.passwordFieldType = this.passwordFieldType === 'password' ? 'text' : 'password';
         },
-        async login() {
+        async handleLogin() {
             this.error = '';
             if (!this.validateForm()) return;
 
             this.isLoading = true;
             try {
-                await this.loginUser({ email: this.email, password: this.password });
+                // Make an API call to your login endpoint
+                const response = await this.$axios.post('https://posinet.onrender.com/api/users/login', {
+                    email: this.email,
+                    password: this.password
+                });
+
+                // Extract the token from the response
+                const { token } = response.data;
+
+                if (!token || typeof token !== 'string' || token.split('.').length !== 3) {
+                    throw new Error('Invalid token received from server');
+                }
+
+                // Decode the token to get user information
+                const decodedToken = this.$jwtDecode(token);
+                const { _id: userId, name: userName, role } = decodedToken;
+
+                // Dispatch the login action with the received data
+                await this.login({ token, userName, userId, role });
+
+                // Redirect to the sales page
                 this.$router.push('/sales');
             } catch (error) {
-                this.error = error.response?.data?.message || 'Login failed. Please check your credentials and try again.';
+                if (error.response) {
+                    // The request was made and the server responded with a status code
+                    // that falls out of the range of 2xx
+                    this.error = error.response.data.message || 'Login failed. Please check your credentials and try again.';
+                } else if (error.request) {
+                    // The request was made but no response was received
+                    this.error = 'No response from server. Please try again later.';
+                } else {
+                    // Something happened in setting up the request that triggered an Error
+                    this.error = error.message || 'An unexpected error occurred. Please try again.';
+                }
                 console.error('Login error:', error);
             } finally {
                 this.isLoading = false;

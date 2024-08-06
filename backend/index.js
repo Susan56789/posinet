@@ -9,7 +9,7 @@ const { MongoClient, ObjectId } = require("mongodb");
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4000;
 
 // MongoDB URI
 const uri = process.env.MONGODB_URI;

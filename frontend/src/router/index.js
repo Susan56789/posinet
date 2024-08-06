@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import store from '../store';
 
 
 const routes = [
@@ -129,8 +130,17 @@ const router = createRouter({
     routes
 });
 
-router.beforeEach((to) => {
+router.beforeEach((to, from, next) => {
     document.title = to.meta.title || 'Posinet POS';
+    if (to.matched.some(record => record.meta.requiresAuth)) {
+        if (!store.getters.isLoggedIn) {
+            next({ name: 'UserLogin' });
+        } else {
+            next();
+        }
+    } else {
+        next();
+    }
 
 });
 

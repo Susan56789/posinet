@@ -1,12 +1,16 @@
 import { createStore } from 'vuex';
-import jwtDecode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 
 function isTokenValid(token) {
-    if (!token) return false;
+    if (!token || typeof token !== 'string' || token.split('.').length !== 3) {
+        console.error('Invalid token format');
+        return false;
+    }
     try {
         const { exp } = jwtDecode(token);
         return exp * 1000 > Date.now();
-    } catch {
+    } catch (error) {
+        console.error('Error decoding token:', error);
         return false;
     }
 }
@@ -20,20 +24,32 @@ export default createStore({
     }),
     mutations: {
         setToken(state, token) {
-            state.token = token;
-            localStorage.setItem('token', token);
+            if (token && token.split('.').length === 3) {
+                state.token = token;
+                localStorage.setItem('token', token);
+            } else {
+                console.error('Invalid token format');
+                state.token = null;
+                localStorage.removeItem('token');
+            }
         },
         setUserName(state, userName) {
-            state.userName = userName;
-            localStorage.setItem('userName', userName);
+            if (state.userName !== userName) {
+                state.userName = userName;
+                localStorage.setItem('userName', userName);
+            }
         },
         setUserId(state, userId) {
-            state.userId = userId;
-            localStorage.setItem('userId', userId);
+            if (state.userId !== userId) {
+                state.userId = userId;
+                localStorage.setItem('userId', userId);
+            }
         },
         setRole(state, role) {
-            state.role = role;
-            localStorage.setItem('role', role);
+            if (state.role !== role) {
+                state.role = role;
+                localStorage.setItem('role', role);
+            }
         },
         clearAuthData(state) {
             state.token = null;
@@ -47,16 +63,18 @@ export default createStore({
         }
     },
     getters: {
-        isLoggedIn: (state) => isTokenValid(state.token),
+        isLoggedIn: (state) => {
+            return state.token && isTokenValid(state.token);
+        },
         getUserName: (state) => state.userName,
         getRole: (state) => state.role,
     },
     actions: {
-        login({ commit }, { token, userName, userId, role }) {
-            commit('setToken', token);
-            commit('setUserName', userName);
-            commit('setUserId', userId);
-            commit('setRole', role);
+        async login({ commit }, { token, userName, userId, role }) {
+            await commit('setToken', token);
+            await commit('setUserName', userName);
+            await commit('setUserId', userId);
+            await commit('setRole', role);
         },
         logout({ commit }) {
             commit('clearAuthData');
