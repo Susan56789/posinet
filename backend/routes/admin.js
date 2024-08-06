@@ -22,6 +22,7 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
         }
     });
 
+
     // User Registration Endpoint
     app.post('/api/admin/register', async (req, res) => {
         try {
@@ -79,6 +80,35 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
             res.status(500).json({ message: 'Error logging in user', error });
         }
     });
+
+    //Update Profile Details
+    app.put('/api/admin/update-profile', authenticate, async (req, res) => {
+        try {
+            const { name, email, phone, organization } = req.body;
+            const { _id } = req.user;
+
+            // Validate input
+            if (!name || !email || !phone || !organization) {
+                return res.status(400).json({ message: 'All fields are required' });
+            }
+
+            // Update the admin details
+            const result = await users.updateOne(
+                { _id: new ObjectId(_id) },
+                { $set: { name, email, phone, organization } }
+            );
+
+            if (result.matchedCount === 0) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            res.json({ message: 'Profile updated successfully' });
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            res.status(500).json({ message: 'Internal server error' });
+        }
+    });
+
 
     // User Profile Endpoint
     app.get('/api/admin/profile', authenticate, (req, res) => {

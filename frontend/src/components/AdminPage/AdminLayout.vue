@@ -20,7 +20,7 @@
                 <div class="flex justify-between items-center">
                     <h1 class="text-xl font-semibold">{{ $route.meta.title }}</h1>
                     <router-link :to="{ name: 'AdminProfile' }" class="hover:underline">
-                        Welcome, {{ userName }}
+                        Welcome, {{ admin.name }}
                     </router-link>
                     <span>{{ currentDate }}</span>
                     <button @click="logout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
@@ -46,6 +46,7 @@ export default {
         const router = useRouter();
         const token = ref('');
         const currentDate = ref(new Date().toLocaleDateString());
+        const admin = ref({});
 
         const menuItems = [
             { name: 'Profile', path: '/admin/profile' },
@@ -54,14 +55,13 @@ export default {
             { name: 'Manage Products', path: '/admin/products' },
             { name: 'Manage Permissions', path: '/admin/permissions' },
             { name: 'View Reports', path: '/admin/reports' },
-
-
         ];
 
         onMounted(() => {
             token.value = localStorage.getItem('token');
             if (token.value) {
                 axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`;
+                fetchAdminData();
             } else {
                 router.push('/login/admin');
             }
@@ -73,10 +73,20 @@ export default {
             router.push('/login/admin');
         };
 
+        const fetchAdminData = async () => {
+            try {
+                const response = await axios.get('https://posinet.onrender.com/api/admin/profile');
+                admin.value = response.data;
+            } catch (error) {
+                console.error('Error fetching admin data:', error);
+            }
+        };
+
         return {
             menuItems,
             logout,
             currentDate,
+            admin,
         };
     },
 };
