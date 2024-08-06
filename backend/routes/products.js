@@ -28,6 +28,20 @@ const createImageURL = (filename) => `/api/images/${filename}`;
 module.exports = (client, app, authenticate) => {
     const database = client.db("posinet");
     const products = database.collection("products");
+    const activities = database.collection("activities");
+
+    const logActivity = async (type, description) => {
+        try {
+            const activity = {
+                type,
+                description,
+                timestamp: new Date()
+            };
+            await activities.insertOne(activity);
+        } catch (error) {
+            console.error('Error logging activity:', error);
+        }
+    };
 
     app.post('/api/products', authenticate, upload.single('image'), async (req, res) => {
         try {
@@ -50,6 +64,9 @@ module.exports = (client, app, authenticate) => {
 
             const newProduct = { title, description, price, stock, image };
             const result = await products.insertOne(newProduct);
+
+            // Log activity
+            await logActivity('product', `Created product: ${title}`);
 
             res.status(201).json(result.ops[0]);
         } catch (error) {
@@ -91,6 +108,9 @@ module.exports = (client, app, authenticate) => {
             const updatedProduct = { title, description, price, stock, image };
             const result = await products.updateOne({ _id: ObjectId(id) }, { $set: updatedProduct });
 
+            // Log activity
+            await logActivity('product', `Updated product ID: ${id}`);
+
             res.status(200).json(result);
         } catch (error) {
             console.error('Error updating product:', error);
@@ -117,6 +137,10 @@ module.exports = (client, app, authenticate) => {
             }
 
             const result = await products.deleteOne({ _id: ObjectId(id) });
+
+            // Log activity
+            await logActivity('product', `Deleted product ID: ${id}`);
+
             res.status(200).json(result);
         } catch (error) {
             console.error('Error deleting product:', error);

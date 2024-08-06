@@ -9,7 +9,7 @@ const { MongoClient, ObjectId } = require("mongodb");
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 5050;
 
 // MongoDB URI
 const uri = process.env.MONGODB_URI;
@@ -67,6 +67,7 @@ const run = async () => {
         require('./routes/products')(client, app, authenticate);
         require('./routes/sales')(client, app, authenticate);
         require('./routes/reports')(client, app, authenticate);
+        require('./routes/activties')(client, app, authenticate);
 
         // Start the server
         app.listen(PORT, () => {
