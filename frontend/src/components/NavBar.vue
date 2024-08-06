@@ -12,11 +12,7 @@
                                 <i :class="['mr-2', item.icon]"></i> {{ item.label }}
                             </router-link>
                         </li>
-                        <li>
-                            <button @click="logout" class="text-white flex items-center hover:text-gray-300">
-                                <i class="fas fa-sign-out-alt mr-2"></i> Logout
-                            </button>
-                        </li>
+
                     </ul>
                 </div>
             </div>
@@ -28,12 +24,6 @@
                         class="text-white block px-3 py-2 rounded-md text-base font-medium hover:text-gray-300 hover:bg-gray-700">
                         <i :class="['mr-2', item.icon]"></i> {{ item.label }}
                     </router-link>
-                </li>
-                <li>
-                    <button @click="logout"
-                        class="text-white block px-3 py-2 rounded-md text-base font-medium hover:text-gray-300 hover:bg-gray-700">
-                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
-                    </button>
                 </li>
             </ul>
         </div>
@@ -60,10 +50,6 @@ export default {
         toggleMenu() {
             this.isMenuOpen = !this.isMenuOpen;
         },
-        logout() {
-            this.$store.commit('clearAuthData');
-            this.$router.push('/login/user');
-        }
     }
 };
 </script>

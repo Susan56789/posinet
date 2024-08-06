@@ -1,5 +1,5 @@
 import { createStore } from 'vuex';
-import { jwtDecode } from 'jwt-decode';
+import jwtDecode from 'jwt-decode';
 
 function isTokenValid(token) {
     if (!token) return false;
@@ -12,14 +12,12 @@ function isTokenValid(token) {
 }
 
 export default createStore({
-    state() {
-        return {
-            token: localStorage.getItem('token') || null,
-            userName: localStorage.getItem('userName') || null,
-            userId: localStorage.getItem('userId') || null,
-            role: localStorage.getItem('role') || null,
-        };
-    },
+    state: () => ({
+        token: localStorage.getItem('token') || null,
+        userName: localStorage.getItem('userName') || null,
+        userId: localStorage.getItem('userId') || null,
+        role: localStorage.getItem('role') || null,
+    }),
     mutations: {
         setToken(state, token) {
             state.token = token;
@@ -52,5 +50,16 @@ export default createStore({
         isLoggedIn: (state) => isTokenValid(state.token),
         getUserName: (state) => state.userName,
         getRole: (state) => state.role,
+    },
+    actions: {
+        login({ commit }, { token, userName, userId, role }) {
+            commit('setToken', token);
+            commit('setUserName', userName);
+            commit('setUserId', userId);
+            commit('setRole', role);
+        },
+        logout({ commit }) {
+            commit('clearAuthData');
+        }
     }
 });

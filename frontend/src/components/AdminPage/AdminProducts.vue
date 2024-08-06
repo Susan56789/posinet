@@ -15,7 +15,7 @@
                     class="border p-2 mb-2 w-full" />
                 <input v-model="productForm.stock" type="number" placeholder="Stock" required
                     class="border p-2 mb-2 w-full" />
-                <input type="file" @change="handleFileUpload" required class="border p-2 mb-2 w-full" />
+                <input type="file" @change="handleFileUpload" :required="!editMode" class="border p-2 mb-2 w-full" />
                 <button type="submit" class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">{{ editMode ?
             'Update' : 'Add' }} Product</button>
                 <button type="button" @click="cancelForm"
@@ -134,9 +134,11 @@ export default {
             }
 
             try {
+                const token = localStorage.getItem('token');
                 await axios.put(`https://posinet.onrender.com/api/products/${this.productForm._id}`, formData, {
                     headers: {
-                        'Content-Type': 'multipart/form-data'
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`
                     }
                 });
                 this.fetchProducts();
@@ -147,7 +149,12 @@ export default {
         },
         async deleteProduct(productId) {
             try {
-                await axios.delete(`https://posinet.onrender.com/api/products/${productId}`);
+                const token = localStorage.getItem('token');
+                await axios.delete(`https://posinet.onrender.com/api/products/${productId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 this.products = this.products.filter(product => product._id !== productId);
             } catch (error) {
                 console.error('Error deleting product:', error);

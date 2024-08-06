@@ -103,8 +103,17 @@ module.exports = (client, app, authenticate) => {
             const { id } = req.params;
             const product = await products.findOne({ _id: ObjectId(id) });
 
+            if (!product) {
+                return res.status(404).json({ message: 'Product not found' });
+            }
+
             if (product.image) {
-                fs.unlinkSync(path.join(__dirname, '..', product.image));
+                const imagePath = path.join(__dirname, '..', product.image);
+                if (fs.existsSync(imagePath)) {
+                    fs.unlinkSync(imagePath);
+                } else {
+                    console.warn(`Image not found at path: ${imagePath}`);
+                }
             }
 
             const result = await products.deleteOne({ _id: ObjectId(id) });

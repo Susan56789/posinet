@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <Header v-if="isLoggedIn" />
+    <Header v-if="!isAdminRoute" />
     <router-view />
   </div>
 </template>
@@ -9,16 +9,22 @@
 
 import Header from './components/HeaderPage.vue';
 import { computed } from 'vue';
-import { useStore } from 'vuex';
+import { useRoute } from 'vue-router';
 
 export default {
   components: {
     Header
   },
   setup() {
-    const store = useStore();
-    const isLoggedIn = computed(() => store.getters.isLoggedIn);
-    return { isLoggedIn };
+    const route = useRoute();
+    const isAdminRoute = computed(() => {
+      return route.matched.some(record => record.meta.role === 'admin');
+    });
+
+    return {
+      isAdminRoute
+    };
+
   }
 };
 </script>

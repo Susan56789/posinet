@@ -17,14 +17,12 @@
 </template>
 
 <script>
-
 import { computed, ref } from 'vue';
 import { useStore } from 'vuex';
 
 export default {
     name: 'HeaderPage',
     setup() {
-
         const store = useStore();
         const currentDate = ref(new Date().toLocaleDateString());
 
@@ -32,7 +30,7 @@ export default {
         const userName = computed(() => store.getters.getUserName);
 
         const logout = () => {
-            store.dispatch('autoLogout');
+            store.dispatch('logout');
         };
 
         return {
@@ -44,3 +42,7 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+/* Add your styles here */
+</style>
