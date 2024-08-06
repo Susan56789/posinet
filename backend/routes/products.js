@@ -1,11 +1,17 @@
 const multer = require('multer');
-const { ObjectId } = require('mongodb');
 const path = require('path');
 const fs = require('fs');
+const { ObjectId } = require('mongodb');
 
+// Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/');
+        const uploadDir = 'uploads/';
+        // Create the uploads directory if it doesn't exist
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + path.extname(file.originalname));
@@ -13,6 +19,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+
 
 module.exports = (client, app, authenticate) => {
     const database = client.db("posinet");
@@ -23,17 +30,38 @@ module.exports = (client, app, authenticate) => {
             const { title, description, price, stock } = req.body;
             const image = req.file ? req.file.path : null;
 
-            if (!title || !description || !price || !stock || !image) {
+            // Validate input
+            if (!title || !description || !price || !stock) {
                 return res.status(400).json({ message: 'All fields are required' });
             }
 
-            const newProduct = { title, description, price, stock, image };
+            // Convert price and stock to numbers
+            const numericPrice = parseFloat(price);
+            const numericStock = parseInt(stock);
+
+            if (isNaN(numericPrice) || isNaN(numericStock)) {
+                return res.status(400).json({ message: 'Invalid price or stock value' });
+            }
+
+            const newProduct = {
+                title,
+                description,
+                price: numericPrice,
+                stock: numericStock,
+                image: image ? `/${image}` : null // Store the relative path
+            };
+
             const result = await products.insertOne(newProduct);
 
-            res.status(201).json(result.ops[0]);
+            if (result.acknowledged && result.insertedId) {
+                const insertedProduct = await products.findOne({ _id: result.insertedId });
+                res.status(201).json(insertedProduct);
+            } else {
+                throw new Error('Failed to insert product');
+            }
         } catch (error) {
             console.error('Error creating product:', error);
-            res.status(500).json({ message: 'Error creating product', error });
+            res.status(500).json({ message: 'Error creating product', error: error.message });
         }
     });
 

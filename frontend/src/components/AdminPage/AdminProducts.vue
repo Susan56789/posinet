@@ -74,7 +74,7 @@ export default {
     methods: {
         async fetchProducts() {
             try {
-                const response = await axios.get('/api/products');
+                const response = await axios.get('https://posinet.onrender.com/api/products');
                 this.products = response.data;
             } catch (error) {
                 console.error('Error fetching products:', error);
@@ -86,7 +86,12 @@ export default {
             this.resetForm();
         },
         handleFileUpload(event) {
-            this.productForm.image = event.target.files[0];
+            const file = event.target.files[0];
+            if (file) {
+                this.productForm.image = file;
+            } else {
+                console.error('No file selected');
+            }
         },
         async createProduct() {
             const formData = new FormData();
@@ -94,18 +99,23 @@ export default {
             formData.append('description', this.productForm.description);
             formData.append('price', this.productForm.price);
             formData.append('stock', this.productForm.stock);
-            formData.append('image', this.productForm.image);
+            if (this.productForm.image) {
+                formData.append('image', this.productForm.image);
+            }
 
             try {
-                const response = await axios.post('/api/products', formData, {
+                const token = localStorage.getItem('token');
+                const response = await axios.post('https://posinet.onrender.com/api/products', formData, {
                     headers: {
-                        'Content-Type': 'multipart/form-data'
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`
                     }
                 });
                 this.products.push(response.data);
                 this.cancelForm();
             } catch (error) {
-                console.error('Error creating product:', error);
+                console.error('Error creating product:', error.response ? error.response.data : error.message);
+                // Handle error (e.g., show error message to user)
             }
         },
         editProduct(product) {
@@ -124,7 +134,7 @@ export default {
             }
 
             try {
-                await axios.put(`/api/products/${this.productForm._id}`, formData, {
+                await axios.put(`https://posinet.onrender.com/api/products/${this.productForm._id}`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
@@ -137,7 +147,7 @@ export default {
         },
         async deleteProduct(productId) {
             try {
-                await axios.delete(`/api/products/${productId}`);
+                await axios.delete(`https://posinet.onrender.com/api/products/${productId}`);
                 this.products = this.products.filter(product => product._id !== productId);
             } catch (error) {
                 console.error('Error deleting product:', error);
