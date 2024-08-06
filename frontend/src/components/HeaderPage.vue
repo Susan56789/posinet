@@ -32,7 +32,7 @@ export default {
         const userName = computed(() => store.getters.getUserName);
 
         const logout = () => {
-            store.dispatch('autoLogout');
+            store.dispatch('logout');
         };
 
         return {

@@ -78,6 +78,7 @@ export default createStore({
         },
         logout({ commit }) {
             commit('clearAuthData');
+            window.location.reload();
         }
     }
 });

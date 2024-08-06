@@ -28,6 +28,7 @@
 
 <script>
 import { mapActions } from 'vuex';
+import { jwtDecode } from 'jwt-decode';
 
 export default {
     name: 'AuthPage',
@@ -65,7 +66,8 @@ export default {
                 }
 
                 // Decode the token to get user information
-                const decodedToken = this.$jwtDecode(token);
+                const decodedToken = jwtDecode(token);
+
                 const { _id: userId, name: userName, role } = decodedToken;
 
                 // Dispatch the login action with the received data
