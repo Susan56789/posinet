@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { ObjectId } = require('mongodb');
 
 module.exports = (client, app, authenticate) => {
     const database = client.db("posinet");

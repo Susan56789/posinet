@@ -170,6 +170,7 @@ export default {
 }
 </script>
 
+
 <style scoped>
 .manage-users {
     max-width: 800px;
