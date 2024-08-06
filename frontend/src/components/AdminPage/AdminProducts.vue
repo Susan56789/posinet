@@ -1,12 +1,33 @@
 <template>
     <div class="manage-products">
         <h1 class="text-2xl font-bold mb-4">Manage Products</h1>
-        <button @click="addProduct" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mb-4">Add
+        <button @click="showAddProductForm" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mb-4">Add
             Product</button>
+
+        <!-- Add/Edit Product Form -->
+        <div v-if="showForm" class="mb-4">
+            <h2 class="text-xl font-bold mb-2">{{ editMode ? 'Edit' : 'Add' }} Product</h2>
+            <form @submit.prevent="editMode ? updateProduct() : createProduct()">
+                <input v-model="productForm.title" placeholder="Title" required class="border p-2 mb-2 w-full" />
+                <input v-model="productForm.description" placeholder="Description" required
+                    class="border p-2 mb-2 w-full" />
+                <input v-model="productForm.price" type="number" placeholder="Price" required
+                    class="border p-2 mb-2 w-full" />
+                <input v-model="productForm.stock" type="number" placeholder="Stock" required
+                    class="border p-2 mb-2 w-full" />
+                <input type="file" @change="handleFileUpload" required class="border p-2 mb-2 w-full" />
+                <button type="submit" class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">{{ editMode ?
+            'Update' : 'Add' }} Product</button>
+                <button type="button" @click="cancelForm"
+                    class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Cancel</button>
+            </form>
+        </div>
+
         <table class="w-full bg-white shadow rounded-lg">
             <thead>
                 <tr class="bg-gray-100 border-b">
-                    <th class="py-2 px-4">Name</th>
+                    <th class="py-2 px-4">Title</th>
+                    <th class="py-2 px-4">Image</th>
                     <th class="py-2 px-4">Price</th>
                     <th class="py-2 px-4">Stock</th>
                     <th class="py-2 px-4">Actions</th>
@@ -14,7 +35,9 @@
             </thead>
             <tbody>
                 <tr v-for="product in products" :key="product._id" class="border-b">
-                    <td class="py-2 px-4">{{ product.name }}</td>
+                    <td class="py-2 px-4">{{ product.title }}</td>
+                    <td class="py-2 px-4"><img :src="product.image" alt="product image"
+                            class="w-16 h-16 object-cover" /></td>
                     <td class="py-2 px-4">${{ product.price }}</td>
                     <td class="py-2 px-4">{{ product.stock }}</td>
                     <td class="py-2 px-4">
@@ -30,28 +53,108 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
     name: 'AdminProducts',
-
     data() {
         return {
-            products: []
+            products: [],
+            showForm: false,
+            editMode: false,
+            productForm: {
+                title: '',
+                description: '',
+                price: '',
+                stock: '',
+                image: null
+            }
         };
     },
     methods: {
-        fetchProducts() {
-            // Fetch products from the backend
+        async fetchProducts() {
+            try {
+                const response = await axios.get('/api/products');
+                this.products = response.data;
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            }
         },
-        addProduct() {
-            // Add product logic
+        showAddProductForm() {
+            this.showForm = true;
+            this.editMode = false;
+            this.resetForm();
+        },
+        handleFileUpload(event) {
+            this.productForm.image = event.target.files[0];
+        },
+        async createProduct() {
+            const formData = new FormData();
+            formData.append('title', this.productForm.title);
+            formData.append('description', this.productForm.description);
+            formData.append('price', this.productForm.price);
+            formData.append('stock', this.productForm.stock);
+            formData.append('image', this.productForm.image);
+
+            try {
+                const response = await axios.post('/api/products', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+                this.products.push(response.data);
+                this.cancelForm();
+            } catch (error) {
+                console.error('Error creating product:', error);
+            }
         },
         editProduct(product) {
-            // Edit product logic
-            console.log(product)
+            this.showForm = true;
+            this.editMode = true;
+            this.productForm = { ...product, image: null };
         },
-        deleteProduct(productId) {
-            console.log(productId)
-            // Delete product logic
+        async updateProduct() {
+            const formData = new FormData();
+            formData.append('title', this.productForm.title);
+            formData.append('description', this.productForm.description);
+            formData.append('price', this.productForm.price);
+            formData.append('stock', this.productForm.stock);
+            if (this.productForm.image) {
+                formData.append('image', this.productForm.image);
+            }
+
+            try {
+                await axios.put(`/api/products/${this.productForm._id}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+                this.fetchProducts();
+                this.cancelForm();
+            } catch (error) {
+                console.error('Error updating product:', error);
+            }
+        },
+        async deleteProduct(productId) {
+            try {
+                await axios.delete(`/api/products/${productId}`);
+                this.products = this.products.filter(product => product._id !== productId);
+            } catch (error) {
+                console.error('Error deleting product:', error);
+            }
+        },
+        resetForm() {
+            this.productForm = {
+                title: '',
+                description: '',
+                price: '',
+                stock: '',
+                image: null
+            };
+        },
+        cancelForm() {
+            this.showForm = false;
+            this.resetForm();
         }
     },
     mounted() {
