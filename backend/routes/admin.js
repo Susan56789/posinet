@@ -22,7 +22,6 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
         }
     });
 
-
     // User Registration Endpoint
     app.post('/api/admin/register', async (req, res) => {
         try {
