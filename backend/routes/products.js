@@ -45,8 +45,6 @@ module.exports = (client, app, authenticate) => {
 
     app.post('/api/products', authenticate, upload.array('images', 5), async (req, res) => {
         try {
-            const { name, email } = req.user;
-
             const productData = {
                 title: req.body.title,
                 description: req.body.description,
@@ -62,23 +60,20 @@ module.exports = (client, app, authenticate) => {
             const images = [];
             if (req.files && req.files.length > 0) {
                 for (const file of req.files) {
-                    const webpBuffer = await sharp(file.buffer)
-                        .resize(300, 300)
-                        .webp({ quality: 80 })
-                        .toBuffer();
+                    const filename = Date.now() + '_' + file.originalname;
+                    const processedImagePath = path.join('uploads', filename);
 
-                    const uploadStream = bucket.openUploadStream(file.originalname + '.webp', {
-                        contentType: 'image/webp'
-                    });
-                    uploadStream.end(webpBuffer);
-                    images.push({ filename: file.originalname + '.webp' });
+                    await sharp(file.buffer)
+                        .resize(300, 300)
+                        .toFile(processedImagePath);
+
+                    images.push({ filename: filename });
                 }
             }
 
             const newProduct = {
                 ...productData,
                 images,
-                seller: { name, email },
                 createdAt: new Date()
             };
 
@@ -94,6 +89,8 @@ module.exports = (client, app, authenticate) => {
             res.status(500).json({ message: "Error creating product", error: error.message });
         }
     });
+
+
     app.get('/api/products', authenticate, async (req, res) => {
         try {
             const productList = await products.find().toArray();

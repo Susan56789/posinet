@@ -16,19 +16,34 @@
                     class="border p-2 mb-2 w-full" />
                 <input v-model="productForm.stock" type="number" placeholder="Stock" required
                     class="border p-2 mb-2 w-full" />
-                <input type="file" @change="handleFileUpload" :required="!editMode" class="border p-2 mb-2 w-full" />
-                <button type="submit" class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">{{ editMode ?
-            'Update' : 'Add' }} Product</button>
+                <input type="file" @change="handleFileUpload" multiple accept="image/*"
+                    class="border p-2 mb-2 w-full" />
+
+                <!-- Image Previews -->
+                <div v-if="imagePreviews.length > 0" class="flex flex-wrap gap-2 mb-2">
+                    <div v-for="(preview, index) in imagePreviews" :key="index" class="relative">
+                        <img :src="preview" alt="Preview" class="w-24 h-24 object-cover" />
+                        <button @click.prevent="removeImage(index)"
+                            class="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1">
+                            X
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">
+                    {{ editMode ? 'Update' : 'Add' }} Product
+                </button>
                 <button type="button" @click="cancelForm"
                     class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Cancel</button>
             </form>
         </div>
 
+        <!-- Product Table -->
         <table class="w-full bg-white shadow rounded-lg">
             <thead>
                 <tr class="bg-gray-100 border-b">
                     <th class="py-2 px-4">Title</th>
-                    <th class="py-2 px-4">Image</th>
+                    <th class="py-2 px-4">Images</th>
                     <th class="py-2 px-4">Price</th>
                     <th class="py-2 px-4">Stock</th>
                     <th class="py-2 px-4">Actions</th>
@@ -37,8 +52,12 @@
             <tbody>
                 <tr v-for="product in products" :key="product._id" class="border-b">
                     <td class="py-2 px-4">{{ product.title }}</td>
-                    <td class="py-2 px-4"><img :src="product.image" alt="product image"
-                            class="w-16 h-16 object-cover" /></td>
+                    <td class="py-2 px-4">
+                        <div class="flex gap-2">
+                            <img v-for="(image, index) in product.images" :key="index" :src="image.url"
+                                alt="product image" class="w-16 h-16 object-cover" />
+                        </div>
+                    </td>
                     <td class="py-2 px-4">${{ product.price }}</td>
                     <td class="py-2 px-4">{{ product.stock }}</td>
                     <td class="py-2 px-4">
@@ -68,8 +87,9 @@ export default {
                 description: '',
                 price: '',
                 stock: '',
-                image: null
-            }
+                images: []
+            },
+            imagePreviews: []
         };
     },
     methods: {
@@ -87,12 +107,21 @@ export default {
             this.resetForm();
         },
         handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                this.productForm.image = file;
-            } else {
-                console.error('No file selected');
-            }
+            const files = Array.from(event.target.files);
+            this.productForm.images = files;
+            this.imagePreviews = [];
+
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.imagePreviews.push(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            });
+        },
+        removeImage(index) {
+            this.productForm.images.splice(index, 1);
+            this.imagePreviews.splice(index, 1);
         },
         async createProduct() {
             const formData = new FormData();
@@ -100,9 +129,9 @@ export default {
             formData.append('description', this.productForm.description);
             formData.append('price', this.productForm.price);
             formData.append('stock', this.productForm.stock);
-            if (this.productForm.image) {
-                formData.append('image', this.productForm.image);
-            }
+            this.productForm.images.forEach((image) => {
+                formData.append(`images`, image);
+            });
 
             try {
                 const token = localStorage.getItem('token');
@@ -115,14 +144,23 @@ export default {
                 this.products.push(response.data);
                 this.cancelForm();
             } catch (error) {
-                console.error('Error creating product:', error.response ? error.response.data : error.message);
-                // Handle error (e.g., show error message to user)
+                console.error('Error creating product:', error);
+                if (error.response) {
+                    console.error('Response data:', error.response.data);
+                    console.error('Response status:', error.response.status);
+                    console.error('Response headers:', error.response.headers);
+                } else if (error.request) {
+                    console.error('No response received:', error.request);
+                } else {
+                    console.error('Error message:', error.message);
+                }
             }
         },
         editProduct(product) {
             this.showForm = true;
             this.editMode = true;
-            this.productForm = { ...product, image: null };
+            this.productForm = { ...product, images: [] };
+            this.imagePreviews = product.images.map(img => img.url);
         },
         async updateProduct() {
             const formData = new FormData();
@@ -130,9 +168,9 @@ export default {
             formData.append('description', this.productForm.description);
             formData.append('price', this.productForm.price);
             formData.append('stock', this.productForm.stock);
-            if (this.productForm.image) {
-                formData.append('image', this.productForm.image);
-            }
+            this.productForm.images.forEach((image) => {
+                formData.append(`images`, image);
+            });
 
             try {
                 const token = localStorage.getItem('token');
@@ -167,8 +205,9 @@ export default {
                 description: '',
                 price: '',
                 stock: '',
-                image: null
+                images: []
             };
+            this.imagePreviews = [];
         },
         cancelForm() {
             this.showForm = false;
