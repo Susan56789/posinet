@@ -23,7 +23,7 @@ const productSchema = Joi.object({
     stock: Joi.number().required()
 });
 
-const createImageURL = (filename) => `/api/images/${filename}`;
+const createImageURL = (filename) => `/uploads/${filename}`;
 
 module.exports = (client, app, authenticate) => {
     const database = client.db("posinet");
@@ -75,16 +75,6 @@ module.exports = (client, app, authenticate) => {
         }
     });
 
-    app.get('/api/products', authenticate, async (req, res) => {
-        try {
-            const productList = await products.find().toArray();
-            res.status(200).json(productList);
-        } catch (error) {
-            console.error('Error fetching products:', error);
-            res.status(500).json({ message: 'Error fetching products', error });
-        }
-    });
-
     app.put('/api/products/:id', authenticate, upload.single('image'), async (req, res) => {
         try {
             const { id } = req.params;
@@ -115,36 +105,6 @@ module.exports = (client, app, authenticate) => {
         } catch (error) {
             console.error('Error updating product:', error);
             res.status(500).json({ message: 'Error updating product', error });
-        }
-    });
-
-    app.delete('/api/products/:id', authenticate, async (req, res) => {
-        try {
-            const { id } = req.params;
-            const product = await products.findOne({ _id: ObjectId(id) });
-
-            if (!product) {
-                return res.status(404).json({ message: 'Product not found' });
-            }
-
-            if (product.image) {
-                const imagePath = path.join(__dirname, '..', product.image);
-                if (fs.existsSync(imagePath)) {
-                    fs.unlinkSync(imagePath);
-                } else {
-                    console.warn(`Image not found at path: ${imagePath}`);
-                }
-            }
-
-            const result = await products.deleteOne({ _id: ObjectId(id) });
-
-            // Log activity
-            await logActivity('product', `Deleted product ID: ${id}`);
-
-            res.status(200).json(result);
-        } catch (error) {
-            console.error('Error deleting product:', error);
-            res.status(500).json({ message: 'Error deleting product', error });
         }
     });
 };

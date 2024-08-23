@@ -1,8 +1,9 @@
 <template>
     <div class="manage-products">
         <h1 class="text-2xl font-bold mb-4">Manage Products</h1>
-        <button @click="showAddProductForm" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mb-4">Add
-            Product</button>
+        <button @click="showAddProductForm" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mb-4">
+            Add Product
+        </button>
 
         <!-- Add/Edit Product Form -->
         <div v-if="showForm" class="mb-4">
