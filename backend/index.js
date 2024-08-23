@@ -25,9 +25,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 
-// Set up multer for handling file uploads
-
-
 
 // Authentication Middleware
 const authenticate = (req, res, next) => {

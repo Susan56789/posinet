@@ -148,7 +148,7 @@ export default {
 
                 if (response.status === 201) {
                     alert('Product added successfully!');
-                    this.fetchProducts(); // Refresh the product list
+                    this.fetchProducts();
                     this.cancelForm();
                 } else {
                     throw new Error('Failed to add product.');
@@ -164,7 +164,7 @@ export default {
                 } else {
                     console.error('Error message:', error.message);
                 }
-                alert('Failed to add product. Please try again.');
+                alert('Failed to add product. Error: ');
             }
         },
 

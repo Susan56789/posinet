@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const { ObjectId } = require('mongodb');
 const fs = require('fs');
+const GridFSBucket = require('mongodb').GridFSBucket;
 
 // Set up multer storage to save files on disk
 const storage = multer.diskStorage({
@@ -26,10 +27,15 @@ const productSchema = Joi.object({
 
 const createImageURL = (filename) => `/api/images/${filename}`;
 
+
 module.exports = (client, app, authenticate) => {
     const database = client.db("posinet");
     const products = database.collection("products");
     const activities = database.collection("activities");
+
+    const bucket = new GridFSBucket(database, {
+        bucketName: 'images'
+    });
 
     const logActivity = async (type, description) => {
         try {
@@ -64,15 +70,22 @@ module.exports = (client, app, authenticate) => {
             const images = [];
             if (req.files && req.files.length > 0) {
                 for (const file of req.files) {
-                    const filename = Date.now() + '_' + file.originalname;
-                    const processedImagePath = path.join('uploads', filename);
+                    const webpBuffer = await sharp(file.buffer)
+                        .webp({ quality: 80 })
+                        .toBuffer();
 
-                    await sharp(file.path)
-                        .resize(300, 300)
-                        .toFile(processedImagePath);
+                    const uploadStream = bucket.openUploadStream(file.originalname + '.webp', {
+                        contentType: 'image/webp'
+                    });
 
-                    images.push({ filename: filename });
-                    fs.unlinkSync(file.path); // Remove the original file
+                    await new Promise((resolve, reject) => {
+                        uploadStream.end(webpBuffer, (error) => {
+                            if (error) reject(error);
+                            else resolve();
+                        });
+                    });
+
+                    images.push({ filename: file.originalname + '.webp' });
                 }
             }
 
@@ -89,9 +102,11 @@ module.exports = (client, app, authenticate) => {
             res.status(201).json({ ...newProduct, _id: result.insertedId });
         } catch (error) {
             console.error('Error creating product:', error);
+            console.error('Error details:', error.stack);
             res.status(500).json({ message: "Error creating product", error: error.message });
         }
     });
+
 
     app.get('/api/products', authenticate, async (req, res) => {
         try {
