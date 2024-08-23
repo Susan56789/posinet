@@ -16,7 +16,7 @@
                         <p class="text-gray-600">Users</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-yellow-600">${{ stats.totalSales }}</p>
+                        <p class="text-2xl font-bold text-yellow-600">{{ formatCurrency(stats.totalSales) }}</p>
                         <p class="text-gray-600">Total Sales</p>
                     </div>
                     <div class="text-center">
@@ -101,6 +101,11 @@ export default {
         };
     },
     methods: {
+        formatCurrency(value) {
+            const numericValue = parseFloat(value);
+            return isNaN(numericValue) ? '-' : numericValue.toLocaleString('en-KE', { style: 'currency', currency: 'KES' });
+        },
+
         activityTypeColor(type) {
             const colors = {
                 product: 'bg-blue-500',

@@ -79,21 +79,15 @@ module.exports = (client, app, authenticate) => {
             const images = [];
             if (req.files && req.files.length > 0) {
                 for (const file of req.files) {
-                    const filename = `${Date.now()}_${file.originalname}`;
-                    const filePath = path.join(uploadsDir, filename);
+                    const webpBuffer = await sharp(file.buffer)
+                        .webp({ quality: 80 })
+                        .toBuffer();
 
-                    try {
-                        await sharp(file.path)
-                            .resize(300, 300)
-                            .toFile(filePath);
-
-                        fs.unlinkSync(file.path); // Remove the original file
-
-                        images.push({ filename, url: createImageURL(filename) });
-                    } catch (imageError) {
-                        console.error('Error processing image:', imageError);
-                        return res.status(500).json({ message: 'Error processing image', error: imageError.message });
-                    }
+                    const uploadStream = bucket.openUploadStream(file.originalname + '.webp', {
+                        contentType: 'image/webp'
+                    });
+                    uploadStream.end(webpBuffer);
+                    images.push({ filename: file.originalname + '.webp' });
                 }
             }
 
@@ -161,22 +155,19 @@ module.exports = (client, app, authenticate) => {
             const updatedProduct = { ...productData };
 
             // Process new images if any
+            const images = [];
             if (req.files && req.files.length > 0) {
-                const newImages = [];
                 for (const file of req.files) {
-                    const filename = Date.now() + '_' + file.originalname;
-                    const processedImagePath = path.join('uploads', filename);
+                    const webpBuffer = await sharp(file.buffer)
+                        .webp({ quality: 80 })
+                        .toBuffer();
 
-                    await sharp(file.path)
-                        .resize(300, 300)
-                        .toFile(processedImagePath);
-
-                    newImages.push({ filename: filename });
-                    fs.unlinkSync(file.path); // Remove the original file
+                    const uploadStream = bucket.openUploadStream(file.originalname + '.webp', {
+                        contentType: 'image/webp'
+                    });
+                    uploadStream.end(webpBuffer);
+                    images.push({ filename: file.originalname + '.webp' });
                 }
-
-                // Append new images to existing ones
-                updatedProduct.images = newImages;
             }
 
             // Update the product
