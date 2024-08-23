@@ -192,7 +192,7 @@ export default {
 
             try {
                 const token = localStorage.getItem('token');
-                await axios.put(`https://posinet.onrender.com/api/products/${this.productForm._id}`, formData, {
+                await axios.put(`https://posinet.onrender.com/api/product/${this.productForm._id}`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                         'Authorization': `Bearer ${token}`
@@ -209,7 +209,7 @@ export default {
         async deleteProduct(productId) {
             try {
                 const token = localStorage.getItem('token');
-                await axios.delete(`https://posinet.onrender.com/api/products/${productId}`, {
+                await axios.delete(`https://posinet.onrender.com/api/product/${productId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

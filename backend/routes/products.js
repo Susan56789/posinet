@@ -118,7 +118,7 @@ module.exports = (client, app, authenticate) => {
         }
     });
 
-    app.put('/api/products/:id', authenticate, upload.array('images', 5), async (req, res) => {
+    app.put('/api/product/:id', authenticate, upload.array('images', 5), async (req, res) => {
         try {
             const { id } = req.params;
 
@@ -178,7 +178,7 @@ module.exports = (client, app, authenticate) => {
         }
     });
 
-    app.delete('/api/products/:id', authenticate, async (req, res) => {
+    app.delete('/api/product/:id', authenticate, async (req, res) => {
         try {
             const { id } = req.params;
             const result = await products.deleteOne({ _id: new ObjectId(id) });
