@@ -90,7 +90,7 @@ export default {
                 description: '',
                 price: '',
                 stock: '',
-                images: []  // Multiple images supported
+                images: []
             },
             imagePreviews: []
         };
@@ -121,8 +121,7 @@ export default {
                 };
                 reader.readAsDataURL(file);
             });
-        }
-        ,
+        },
         removeImage(index) {
             this.productForm.images.splice(index, 1);
             this.imagePreviews.splice(index, 1);
@@ -135,11 +134,9 @@ export default {
                 formData.append('price', this.productForm.price);
                 formData.append('stock', this.productForm.stock);
 
-                // Ensure images are correctly appended
                 this.productForm.images.forEach((image) => {
-                    formData.append('images', image.file);
+                    formData.append('images', image);
                 });
-
 
                 const token = localStorage.getItem('token');
                 if (!token) throw new Error('Authentication token is missing.');
@@ -170,20 +167,19 @@ export default {
                 ...product,
                 images: [] // Reset images array for new uploads
             };
-            this.imagePreviews = product.images.map(img => img.url ? img.url : `https://posinet.onrender.com/api/images/${img.filename}`);
+            this.imagePreviews = product.images.map(img => img.url || `https://posinet.onrender.com/api/images/${img.filename}`);
         },
         async updateProduct() {
             try {
                 const formData = new FormData();
-                formData.append('title', this.product.title);
-                formData.append('description', this.product.description);
-                formData.append('price', this.product.price);
-                formData.append('stock', this.product.stock);
+                formData.append('title', this.productForm.title);
+                formData.append('description', this.productForm.description);
+                formData.append('price', this.productForm.price);
+                formData.append('stock', this.productForm.stock);
 
-                this.product.images.forEach((image) => {
-                    formData.append('images', image.file);
+                this.productForm.images.forEach((image) => {
+                    formData.append('images', image);
                 });
-
 
                 const token = localStorage.getItem('token');
                 await axios.put(`https://posinet.onrender.com/api/product/${this.productForm._id}`, formData, {

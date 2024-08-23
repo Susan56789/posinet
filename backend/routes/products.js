@@ -37,7 +37,11 @@ const productSchema = Joi.object({
     title: Joi.string().required(),
     description: Joi.string().required(),
     price: Joi.number().required(),
-    stock: Joi.number().required()
+    stock: Joi.number().required(),
+    images: Joi.array().items(Joi.object({
+        filename: Joi.string().required(),
+        url: Joi.string().required()
+    }))
 });
 
 const createImageURL = (filename) => `/api/images/${filename}`;
@@ -67,22 +71,11 @@ module.exports = (client, app, authenticate) => {
 
     app.post('/api/products', authenticate, upload.array('images', 5), async (req, res) => {
         try {
-            const productData = {
-                title: req.body.title,
-                description: req.body.description,
-                price: parseFloat(req.body.price),
-                stock: parseInt(req.body.stock)
-            };
-
-            const { error } = productSchema.validate(productData);
-            if (error) {
-                return res.status(400).json({ message: "Invalid data", error: error.details[0].message });
-            }
-
+            // Process images first
             const images = [];
             if (req.files && req.files.length > 0) {
                 for (const file of req.files) {
-                    const filename = Date.now() + '_' + file.originalname;
+                    const filename = `${Date.now()}_${file.originalname}`;
                     const filePath = path.join('uploads', filename);
 
                     await sharp(file.path)
@@ -93,19 +86,36 @@ module.exports = (client, app, authenticate) => {
 
                     images.push({ filename, url: createImageURL(filename) });
                 }
-            } else {
-                console.log("No files received or files array is empty.");
             }
 
+            // Prepare product data including images
+            const productData = {
+                title: req.body.title,
+                description: req.body.description,
+                price: parseFloat(req.body.price),
+                stock: parseInt(req.body.stock),
+                images: images
+            };
+
+            // Validate product data
+            const { error } = productSchema.validate(productData);
+            if (error) {
+                return res.status(400).json({ message: "Invalid data", error: error.details[0].message });
+            }
+
+            // Create new product object
             const newProduct = {
                 ...productData,
-                images,
                 createdAt: new Date()
             };
 
+            // Insert product into database
             const result = await products.insertOne(newProduct);
+
+            // Log activity
             await logActivity('product', `Created product: ${productData.title}`);
 
+            // Send response
             res.status(201).json({ ...newProduct, _id: result.insertedId });
         } catch (error) {
             console.error('Error creating product:', error);
