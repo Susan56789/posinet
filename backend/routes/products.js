@@ -45,6 +45,9 @@ module.exports = (client, app, authenticate) => {
 
     app.post('/api/products', authenticate, upload.array('images', 5), async (req, res) => {
         try {
+            console.log('Received request body:', req.body);
+            console.log('Received files:', req.files);
+
             const productData = {
                 title: req.body.title,
                 description: req.body.description,
