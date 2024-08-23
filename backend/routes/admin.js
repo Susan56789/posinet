@@ -48,37 +48,48 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
         }
     });
 
-    // User Login Endpoint
+    // Admin Login Endpoint
     app.post('/api/admin/login', async (req, res) => {
         try {
             const { email, password } = req.body;
 
+            // Validate request
             if (!email || !password) {
                 return res.status(400).json({ message: 'Email and password are required' });
             }
 
+            // Find user by email
             const user = await users.findOne({ email });
             if (!user) {
                 return res.status(400).json({ message: 'Invalid email or password' });
             }
 
+            // Validate password
             const isPasswordValid = await bcrypt.compare(password, user.password);
             if (!isPasswordValid) {
                 return res.status(400).json({ message: 'Invalid email or password' });
             }
 
+            // Create JWT token with additional user information
             const token = jwt.sign(
-                { _id: user._id, name: user.name, email: user.email, phone: user.phone },
+                { _id: user._id, name: user.name, email: user.email, role: user.role, phone: user.phone },
                 process.env.JWT_SECRET || 'secretkey',
                 { expiresIn: '1h' }
             );
 
-            res.json({ token });
+            // Send token, role, and user ID in the response
+            res.json({
+                token,
+                userId: user._id,
+                userName: user.name,
+                role: user.role || 'admin'
+            });
         } catch (error) {
             console.error('Error logging in user:', error);
             res.status(500).json({ message: 'Error logging in user', error });
         }
     });
+
 
     //Update Profile Details
     app.put('/api/admin/update-profile', authenticate, async (req, res) => {

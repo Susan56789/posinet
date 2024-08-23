@@ -132,16 +132,24 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
     document.title = to.meta.title || 'Posinet POS';
-    if (to.matched.some(record => record.meta.requiresAuth)) {
+    const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+    const userRole = store.getters.getRole;
+
+    if (requiresAuth) {
         if (!store.getters.isLoggedIn) {
             next({ name: 'UserLogin' });
+        } else if (to.meta.role && to.meta.role !== userRole) {
+            // If the route requires a specific role and the user doesn't have it
+            next({ name: userRole === 'admin' ? 'AdminDashboard' : 'Home' });
         } else {
             next();
         }
     } else {
         next();
     }
-
 });
+
+// Reload the current route to ensure proper evaluation
+router.push({ name: router.currentRoute.value.name });
 
 export default router;

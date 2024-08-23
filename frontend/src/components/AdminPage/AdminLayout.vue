@@ -44,7 +44,7 @@ export default {
     name: 'AdminLayout',
     setup() {
         const router = useRouter();
-        const token = ref('');
+        const token = ref(localStorage.getItem('token') || '');
         const currentDate = ref(new Date().toLocaleDateString());
         const admin = ref({});
 
@@ -58,7 +58,6 @@ export default {
         ];
 
         onMounted(() => {
-            token.value = localStorage.getItem('token');
             if (token.value) {
                 axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`;
                 fetchAdminData();
@@ -79,6 +78,10 @@ export default {
                 admin.value = response.data;
             } catch (error) {
                 console.error('Error fetching admin data:', error);
+                if (error.response && error.response.status === 401) {
+                    // If the token is invalid or expired, force logout
+                    logout();
+                }
             }
         };
 
