@@ -23,7 +23,7 @@ const productSchema = Joi.object({
     stock: Joi.number().required()
 });
 
-const createImageURL = (filename) => `/uploads/${filename}`;
+const createImageURL = (filename) => `/api/images/${filename}`;
 
 module.exports = (client, app, authenticate) => {
     const database = client.db("posinet");
@@ -43,38 +43,57 @@ module.exports = (client, app, authenticate) => {
         }
     };
 
-    app.post('/api/products', authenticate, upload.single('image'), async (req, res) => {
+    app.post('/api/products', authenticate, upload.array('images', 5), async (req, res) => {
         try {
-            const { error } = productSchema.validate(req.body);
+            const { name, email } = req.user;
+
+            const productData = {
+                title: req.body.title,
+                description: req.body.description,
+                price: parseFloat(req.body.price),
+                stock: parseInt(req.body.stock)
+            };
+
+            const { error } = productSchema.validate(productData);
             if (error) {
-                return res.status(400).json({ message: error.details[0].message });
+                return res.status(400).json({ message: "Invalid data", error: error.details[0].message });
             }
 
-            const { title, description, price, stock } = req.body;
-            let image = null;
+            const images = [];
+            if (req.files && req.files.length > 0) {
+                for (const file of req.files) {
+                    const webpBuffer = await sharp(file.buffer)
+                        .resize(300, 300)
+                        .webp({ quality: 80 })
+                        .toBuffer();
 
-            if (req.file) {
-                const processedImagePath = `uploads/processed_${req.file.filename}`;
-                await sharp(req.file.path)
-                    .resize(300, 300)
-                    .toFile(processedImagePath);
-                image = createImageURL(`processed_${req.file.filename}`);
-                fs.unlinkSync(req.file.path); // Remove the original file
+                    const uploadStream = bucket.openUploadStream(file.originalname + '.webp', {
+                        contentType: 'image/webp'
+                    });
+                    uploadStream.end(webpBuffer);
+                    images.push({ filename: file.originalname + '.webp' });
+                }
             }
 
-            const newProduct = { title, description, price, stock, image };
+            const newProduct = {
+                ...productData,
+                images,
+                seller: { name, email },
+                createdAt: new Date()
+            };
+
             const result = await products.insertOne(newProduct);
 
             // Log activity
-            await logActivity('product', `Created product: ${title}`);
+            await logActivity('product', `Created product: ${productData.title}`);
 
-            res.status(201).json(result.ops[0]);
+            res.status(201).json({ ...newProduct, _id: result.insertedId });
         } catch (error) {
             console.error('Error creating product:', error);
-            res.status(500).json({ message: 'Error creating product', error });
+            console.error('Error details:', error.stack);
+            res.status(500).json({ message: "Error creating product", error: error.message });
         }
     });
-
     app.get('/api/products', authenticate, async (req, res) => {
         try {
             const productList = await products.find().toArray();
@@ -84,8 +103,6 @@ module.exports = (client, app, authenticate) => {
             res.status(500).json({ message: 'Error fetching products', error });
         }
     });
-
-
 
     app.put('/api/products/:id', authenticate, upload.single('image'), async (req, res) => {
         try {
@@ -119,4 +136,25 @@ module.exports = (client, app, authenticate) => {
             res.status(500).json({ message: 'Error updating product', error });
         }
     });
+
+    app.delete('/api/products/:id', authenticate, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const result = await products.deleteOne({ _id: new ObjectId(id) });
+
+            if (result.deletedCount === 0) {
+                return res.status(404).json({ message: 'Product not found' });
+            }
+
+            // Log activity
+            await logActivity('product', `Deleted product ID: ${id}`);
+
+            res.status(200).json({ message: 'Product deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting product:', error);
+            res.status(500).json({ message: 'Error deleting product', error: error.toString() });
+        }
+    });
 };
+
+
