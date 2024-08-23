@@ -1,3 +1,4 @@
+const express = require('express');
 const Joi = require('joi');
 const sharp = require('sharp');
 const multer = require('multer');
@@ -5,6 +6,20 @@ const path = require('path');
 const { ObjectId } = require('mongodb');
 const fs = require('fs');
 const GridFSBucket = require('mongodb').GridFSBucket;
+const helmet = require('helmet');
+
+const app = express();
+
+// Use helmet for basic security best practices
+app.use(helmet({
+    crossOriginEmbedderPolicy: false,
+}));
+
+// Ensure the uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+}
 
 // Set up multer storage to save files on disk
 const storage = multer.diskStorage({

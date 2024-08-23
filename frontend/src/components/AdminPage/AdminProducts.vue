@@ -1,3 +1,4 @@
+<!-- eslint-disable no-unused-vars -->
 <template>
     <div class="manage-products">
         <h1 class="text-2xl font-bold mb-4">Manage Products</h1>
@@ -20,15 +21,17 @@
                     class="border p-2 mb-2 w-full" />
 
                 <!-- Image Previews -->
-                <div v-if="imagePreviews.length > 0" class="flex flex-wrap gap-2 mb-2">
-                    <div v-for="(preview, index) in imagePreviews" :key="index" class="relative">
-                        <img :src="preview" alt="Preview" class="w-24 h-24 object-cover" />
-                        <button @click.prevent="removeImage(index)"
-                            class="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1">
-                            X
-                        </button>
+                <div v-if="imagePreviews.length" class="mt-4">
+                    <h3 class="text-lg font-semibold mb-2">Image Preview:</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div v-for="(image, index) in imagePreviews" :key="index" class="relative">
+                            <img :src="image" alt="Preview" class="w-full h-32 object-cover rounded-md" />
+                            <button @click="removeImage(index)"
+                                class="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full">×</button>
+                        </div>
                     </div>
                 </div>
+
 
                 <button type="submit" class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">
                     {{ editMode ? 'Update' : 'Add' }} Product
@@ -87,7 +90,7 @@ export default {
                 description: '',
                 price: '',
                 stock: '',
-                images: []
+                images: []  // Multiple images supported
             },
             imagePreviews: []
         };
@@ -111,14 +114,15 @@ export default {
             this.productForm.images = files;
             this.imagePreviews = [];
 
-            files.forEach(file => {
+            files.forEach((file) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     this.imagePreviews.push(e.target.result);
                 };
                 reader.readAsDataURL(file);
             });
-        },
+        }
+        ,
         removeImage(index) {
             this.productForm.images.splice(index, 1);
             this.imagePreviews.splice(index, 1);
@@ -131,10 +135,11 @@ export default {
                 formData.append('price', this.productForm.price);
                 formData.append('stock', this.productForm.stock);
 
-                // Append each image file separately
+                // Ensure images are correctly appended
                 this.productForm.images.forEach((image) => {
-                    formData.append(`images`, image);
+                    formData.append('images', image.file);
                 });
+
 
                 const token = localStorage.getItem('token');
                 if (!token) throw new Error('Authentication token is missing.');
@@ -155,44 +160,33 @@ export default {
                 }
             } catch (error) {
                 console.error('Error creating product:', error);
-                if (error.response) {
-                    console.error('Response data:', error.response.data);
-                    console.error('Response status:', error.response.status);
-                    console.error('Response headers:', error.response.headers);
-                } else if (error.request) {
-                    console.error('No response received:', error.request);
-                } else {
-                    console.error('Error message:', error.message);
-                }
-                alert('Failed to add product. Error: ');
+                alert('Failed to add product. Error: ' + error.message);
             }
         },
-
         editProduct(product) {
             this.showForm = true;
             this.editMode = true;
             this.productForm = {
                 ...product,
-                images: [] // Reset images array
+                images: [] // Reset images array for new uploads
             };
-            this.imagePreviews = product.images.map(img => img.filename ? `https://posinet.onrender.com/api/images/${img.filename}` : img.url);
+            this.imagePreviews = product.images.map(img => img.url ? img.url : `https://posinet.onrender.com/api/images/${img.filename}`);
         },
-
         async updateProduct() {
-            const formData = new FormData();
-            formData.append('title', this.productForm.title);
-            formData.append('description', this.productForm.description);
-            formData.append('price', this.productForm.price);
-            formData.append('stock', this.productForm.stock);
-
-            // Append each new image file separately
-            this.productForm.images.forEach((image) => {
-                formData.append(`images`, image);
-            });
-
             try {
+                const formData = new FormData();
+                formData.append('title', this.productForm.title);
+                formData.append('description', this.productForm.description);
+                formData.append('price', this.productForm.price);
+                formData.append('stock', this.productForm.stock);
+
+                // Append each new image file separately
+                this.productForm.images.forEach((image) => {
+                    formData.append('images', image);
+                });
+
                 const token = localStorage.getItem('token');
-                await axios.put(`https://posinet.onrender.com/api/product/${this.productForm._id}`, formData, {
+                await axios.put(`https://posinet.onrender.com/api/products/${this.productForm._id}`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                         'Authorization': `Bearer ${token}`
@@ -209,7 +203,7 @@ export default {
         async deleteProduct(productId) {
             try {
                 const token = localStorage.getItem('token');
-                await axios.delete(`https://posinet.onrender.com/api/product/${productId}`, {
+                await axios.delete(`https://posinet.onrender.com/api/products/${productId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
