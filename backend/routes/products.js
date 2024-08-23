@@ -56,7 +56,6 @@ module.exports = (client, app, authenticate) => {
                 stock: parseInt(req.body.stock)
             };
 
-            // Validate product data
             const { error } = productSchema.validate(productData);
             if (error) {
                 return res.status(400).json({ message: "Invalid data", error: error.details[0].message });
@@ -65,18 +64,14 @@ module.exports = (client, app, authenticate) => {
             const images = [];
             if (req.files && req.files.length > 0) {
                 for (const file of req.files) {
-                    const processedImagePath = path.join('uploads', 'processed_' + file.filename);
+                    const filename = Date.now() + '_' + file.originalname;
+                    const processedImagePath = path.join('uploads', filename);
 
-                    // Process and save the image using sharp
-                    await sharp(file.path)
-                        .resize(500, 500)
+                    await sharp(file.buffer) // Use file.buffer instead of file.path
+                        .resize(300, 300)
                         .toFile(processedImagePath);
 
-                    // Add processed image to images array
-                    images.push({ filename: 'processed_' + file.filename });
-
-                    // Optionally, remove the original file
-                    fs.unlinkSync(file.path);
+                    images.push({ filename: filename });
                 }
             }
 
@@ -88,7 +83,6 @@ module.exports = (client, app, authenticate) => {
 
             const result = await products.insertOne(newProduct);
 
-            // Log activity
             await logActivity('product', `Created product: ${productData.title}`);
 
             res.status(201).json({ ...newProduct, _id: result.insertedId });
@@ -97,7 +91,6 @@ module.exports = (client, app, authenticate) => {
             res.status(500).json({ message: "Error creating product", error: error.message });
         }
     });
-
 
     app.get('/api/products', authenticate, async (req, res) => {
         try {

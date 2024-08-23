@@ -126,7 +126,7 @@ export default {
         async createProduct() {
             try {
                 const formData = new FormData();
-                for (const [key, value] of Object.entries(this.productForm)) {  // Changed this.form to this.productForm
+                for (const [key, value] of Object.entries(this.productForm)) {
                     if (key !== 'images') {
                         formData.append(key, value);
                     }
@@ -164,8 +164,7 @@ export default {
                     console.error('Error message:', error.message);
                 }
             }
-        }
-        ,
+        },
         editProduct(product) {
             this.showForm = true;
             this.editMode = true;
@@ -179,7 +178,7 @@ export default {
             formData.append('price', this.productForm.price);
             formData.append('stock', this.productForm.stock);
             this.productForm.images.forEach((image) => {
-                formData.append(`images`, image);
+                formData.append('images', image);
             });
 
             try {
