@@ -175,18 +175,18 @@ export default {
         async updateProduct() {
             try {
                 const formData = new FormData();
-                formData.append('title', this.productForm.title);
-                formData.append('description', this.productForm.description);
-                formData.append('price', this.productForm.price);
-                formData.append('stock', this.productForm.stock);
+                formData.append('title', this.product.title);
+                formData.append('description', this.product.description);
+                formData.append('price', this.product.price);
+                formData.append('stock', this.product.stock);
 
-                // Append each new image file separately
-                this.productForm.images.forEach((image) => {
-                    formData.append('images', image);
+                this.product.images.forEach((image) => {
+                    formData.append('images', image.file);
                 });
 
+
                 const token = localStorage.getItem('token');
-                await axios.put(`https://posinet.onrender.com/api/products/${this.productForm._id}`, formData, {
+                await axios.put(`https://posinet.onrender.com/api/product/${this.productForm._id}`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                         'Authorization': `Bearer ${token}`
@@ -203,7 +203,7 @@ export default {
         async deleteProduct(productId) {
             try {
                 const token = localStorage.getItem('token');
-                await axios.delete(`https://posinet.onrender.com/api/products/${productId}`, {
+                await axios.delete(`https://posinet.onrender.com/api/product/${productId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

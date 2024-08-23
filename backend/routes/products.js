@@ -67,7 +67,6 @@ module.exports = (client, app, authenticate) => {
 
     app.post('/api/products', authenticate, upload.array('images', 5), async (req, res) => {
         try {
-            // Validate and process the product data
             const productData = {
                 title: req.body.title,
                 description: req.body.description,
@@ -87,13 +86,15 @@ module.exports = (client, app, authenticate) => {
                     const filePath = path.join('uploads', filename);
 
                     await sharp(file.path)
-                        .resize(300, 300) // Optional: resize image
+                        .resize(300, 300)
                         .toFile(filePath);
 
                     fs.unlinkSync(file.path); // Remove the original file
 
                     images.push({ filename, url: createImageURL(filename) });
                 }
+            } else {
+                console.log("No files received or files array is empty.");
             }
 
             const newProduct = {
