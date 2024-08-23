@@ -75,6 +75,17 @@ module.exports = (client, app, authenticate) => {
         }
     });
 
+    app.get('/api/products', authenticate, async (req, res) => {
+        try {
+            const products = await productsCollection.find().toArray();
+            res.json(products);
+        } catch (error) {
+            console.error('Error fetching products:', error);
+            res.status(500).json({ message: 'Failed to fetch products' });
+        }
+    });
+
+
     app.put('/api/products/:id', authenticate, upload.single('image'), async (req, res) => {
         try {
             const { id } = req.params;
