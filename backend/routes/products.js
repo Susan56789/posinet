@@ -5,6 +5,7 @@ const path = require('path');
 const { ObjectId } = require('mongodb');
 const fs = require('fs');
 
+// Set up multer storage to save files on disk
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, 'uploads/');
@@ -55,6 +56,7 @@ module.exports = (client, app, authenticate) => {
                 stock: parseInt(req.body.stock)
             };
 
+            // Validate product data
             const { error } = productSchema.validate(productData);
             if (error) {
                 return res.status(400).json({ message: "Invalid data", error: error.details[0].message });
@@ -63,14 +65,18 @@ module.exports = (client, app, authenticate) => {
             const images = [];
             if (req.files && req.files.length > 0) {
                 for (const file of req.files) {
-                    const filename = Date.now() + '_' + file.originalname;
-                    const processedImagePath = path.join('uploads', filename);
+                    const processedImagePath = path.join('uploads', 'processed_' + file.filename);
 
-                    await sharp(file.buffer)
-                        .resize(300, 300)
+                    // Process and save the image using sharp
+                    await sharp(file.path)
+                        .resize(500, 500)
                         .toFile(processedImagePath);
 
-                    images.push({ filename: filename });
+                    // Add processed image to images array
+                    images.push({ filename: 'processed_' + file.filename });
+
+                    // Optionally, remove the original file
+                    fs.unlinkSync(file.path);
                 }
             }
 
@@ -88,7 +94,6 @@ module.exports = (client, app, authenticate) => {
             res.status(201).json({ ...newProduct, _id: result.insertedId });
         } catch (error) {
             console.error('Error creating product:', error);
-            console.error('Error details:', error.stack);
             res.status(500).json({ message: "Error creating product", error: error.message });
         }
     });

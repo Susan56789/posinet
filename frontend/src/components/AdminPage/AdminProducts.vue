@@ -124,25 +124,34 @@ export default {
             this.imagePreviews.splice(index, 1);
         },
         async createProduct() {
-            const formData = new FormData();
-            formData.append('title', this.productForm.title);
-            formData.append('description', this.productForm.description);
-            formData.append('price', this.productForm.price);
-            formData.append('stock', this.productForm.stock);
-            this.productForm.images.forEach((image) => {
-                formData.append(`images`, image);
-            });
-
             try {
+                const formData = new FormData();
+                for (const [key, value] of Object.entries(this.productForm)) {  // Changed this.form to this.productForm
+                    if (key !== 'images') {
+                        formData.append(key, value);
+                    }
+                }
+                for (const image of this.productForm.images) {
+                    formData.append('images', image);
+                }
+
                 const token = localStorage.getItem('token');
+                if (!token) throw new Error('Authentication token is missing.');
+
                 const response = await axios.post('https://posinet.onrender.com/api/products', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                this.products.push(response.data);
-                this.cancelForm();
+
+                if (response.status === 201) {
+                    alert('Product added successfully!');
+                    this.products.push(response.data);
+                    this.cancelForm();
+                } else {
+                    throw new Error('Failed to add product.');
+                }
             } catch (error) {
                 console.error('Error creating product:', error);
                 if (error.response) {
@@ -155,7 +164,8 @@ export default {
                     console.error('Error message:', error.message);
                 }
             }
-        },
+        }
+        ,
         editProduct(product) {
             this.showForm = true;
             this.editMode = true;
