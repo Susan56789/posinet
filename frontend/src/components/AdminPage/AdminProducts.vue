@@ -126,14 +126,15 @@ export default {
         async createProduct() {
             try {
                 const formData = new FormData();
-                for (const [key, value] of Object.entries(this.productForm)) {
-                    if (key !== 'images') {
-                        formData.append(key, value);
-                    }
-                }
-                for (const image of this.productForm.images) {
-                    formData.append('images', image);
-                }
+                formData.append('title', this.productForm.title);
+                formData.append('description', this.productForm.description);
+                formData.append('price', this.productForm.price);
+                formData.append('stock', this.productForm.stock);
+
+                // Append each image file separately
+                this.productForm.images.forEach((image) => {
+                    formData.append(`images`, image);
+                });
 
                 const token = localStorage.getItem('token');
                 if (!token) throw new Error('Authentication token is missing.');
@@ -147,7 +148,7 @@ export default {
 
                 if (response.status === 201) {
                     alert('Product added successfully!');
-                    this.products.push(response.data);
+                    this.fetchProducts(); // Refresh the product list
                     this.cancelForm();
                 } else {
                     throw new Error('Failed to add product.');
@@ -163,22 +164,30 @@ export default {
                 } else {
                     console.error('Error message:', error.message);
                 }
+                alert('Failed to add product. Please try again.');
             }
         },
+
         editProduct(product) {
             this.showForm = true;
             this.editMode = true;
-            this.productForm = { ...product, images: [] };
-            this.imagePreviews = product.images.map(img => img.url);
+            this.productForm = {
+                ...product,
+                images: [] // Reset images array
+            };
+            this.imagePreviews = product.images.map(img => img.filename ? `https://posinet.onrender.com/api/images/${img.filename}` : img.url);
         },
+
         async updateProduct() {
             const formData = new FormData();
             formData.append('title', this.productForm.title);
             formData.append('description', this.productForm.description);
             formData.append('price', this.productForm.price);
             formData.append('stock', this.productForm.stock);
+
+            // Append each new image file separately
             this.productForm.images.forEach((image) => {
-                formData.append('images', image);
+                formData.append(`images`, image);
             });
 
             try {
@@ -191,8 +200,10 @@ export default {
                 });
                 this.fetchProducts();
                 this.cancelForm();
+                alert('Product updated successfully!');
             } catch (error) {
                 console.error('Error updating product:', error);
+                alert('Failed to update product. Please try again.');
             }
         },
         async deleteProduct(productId) {

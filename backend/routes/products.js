@@ -67,11 +67,12 @@ module.exports = (client, app, authenticate) => {
                     const filename = Date.now() + '_' + file.originalname;
                     const processedImagePath = path.join('uploads', filename);
 
-                    await sharp(file.buffer) // Use file.buffer instead of file.path
+                    await sharp(file.path)
                         .resize(300, 300)
                         .toFile(processedImagePath);
 
                     images.push({ filename: filename });
+                    fs.unlinkSync(file.path); // Remove the original file
                 }
             }
 
@@ -102,36 +103,63 @@ module.exports = (client, app, authenticate) => {
         }
     });
 
-    app.put('/api/products/:id', authenticate, upload.single('image'), async (req, res) => {
+    app.put('/api/products/:id', authenticate, upload.array('images', 5), async (req, res) => {
         try {
             const { id } = req.params;
-            const { error } = productSchema.validate(req.body);
+
+            const productData = {
+                title: req.body.title,
+                description: req.body.description,
+                price: parseFloat(req.body.price),
+                stock: parseInt(req.body.stock)
+            };
+
+            const { error } = productSchema.validate(productData);
             if (error) {
-                return res.status(400).json({ message: error.details[0].message });
+                return res.status(400).json({ message: "Invalid data", error: error.details[0].message });
             }
 
-            const { title, description, price, stock } = req.body;
-            let image = req.body.image;
+            const updatedProduct = { ...productData };
 
-            if (req.file) {
-                const processedImagePath = `uploads/processed_${req.file.filename}`;
-                await sharp(req.file.path)
-                    .resize(300, 300)
-                    .toFile(processedImagePath);
-                image = createImageURL(`processed_${req.file.filename}`);
-                fs.unlinkSync(req.file.path); // Remove the original file
+            // Process new images if any
+            if (req.files && req.files.length > 0) {
+                const newImages = [];
+                for (const file of req.files) {
+                    const filename = Date.now() + '_' + file.originalname;
+                    const processedImagePath = path.join('uploads', filename);
+
+                    await sharp(file.path)
+                        .resize(300, 300)
+                        .toFile(processedImagePath);
+
+                    newImages.push({ filename: filename });
+                    fs.unlinkSync(file.path); // Remove the original file
+                }
+
+                // Append new images to existing ones
+                updatedProduct.images = newImages;
             }
 
-            const updatedProduct = { title, description, price, stock, image };
-            const result = await products.updateOne({ _id: ObjectId(id) }, { $set: updatedProduct });
+            // Update the product
+            const result = await products.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: updatedProduct }
+            );
+
+            if (result.matchedCount === 0) {
+                return res.status(404).json({ message: 'Product not found' });
+            }
 
             // Log activity
             await logActivity('product', `Updated product ID: ${id}`);
 
-            res.status(200).json(result);
+            // Fetch the updated product to return in the response
+            const updatedProductData = await products.findOne({ _id: new ObjectId(id) });
+
+            res.status(200).json(updatedProductData);
         } catch (error) {
             console.error('Error updating product:', error);
-            res.status(500).json({ message: 'Error updating product', error });
+            res.status(500).json({ message: 'Error updating product', error: error.toString() });
         }
     });
 

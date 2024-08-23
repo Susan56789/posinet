@@ -7,6 +7,19 @@ module.exports = (client, app, authenticate) => {
     const database = client.db("posinet");
     const users = database.collection("users");
 
+    const logActivity = async (type, description) => {
+        try {
+            const activity = {
+                type,
+                description,
+                timestamp: new Date()
+            };
+            await activities.insertOne(activity);
+        } catch (error) {
+            console.error('Error logging activity:', error);
+        }
+    };
+
     // User Registration Endpoint
     app.post('/api/users/register', async (req, res) => {
         try {
@@ -27,6 +40,8 @@ module.exports = (client, app, authenticate) => {
             const newUser = { name, email, password: hashedPassword, phone, role };
             const result = await users.insertOne(newUser);
 
+
+            await logActivity('user', `added user: ${newUser.name}`);
             res.status(201).json(result);
         } catch (error) {
             console.error('Error registering user:', error);
@@ -89,6 +104,9 @@ module.exports = (client, app, authenticate) => {
 
             const updatedUser = { name, email, role, phone };
             await users.updateOne({ _id: new ObjectId(id) }, { $set: updatedUser });
+
+            // Log activity
+            await logActivity('product', `Deleted user ID: ${id}`);
 
             res.json({ message: 'User updated successfully' });
         } catch (error) {
