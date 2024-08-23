@@ -61,7 +61,7 @@
                                 alt="product image" class="w-16 h-16 object-cover" />
                         </div>
                     </td>
-                    <td class="py-2 px-4">${{ product.price }}</td>
+                    <td class="py-2 px-4">{{ formatCurrency(product.price) }}</td>
                     <td class="py-2 px-4">{{ product.stock }}</td>
                     <td class="py-2 px-4">
                         <button @click="editProduct(product)"
@@ -96,6 +96,10 @@ export default {
         };
     },
     methods: {
+        formatCurrency(value) {
+            const numericValue = parseFloat(value);
+            return isNaN(numericValue) ? '-' : numericValue.toLocaleString('en-KE', { style: 'currency', currency: 'KES' });
+        },
         async fetchProducts() {
             try {
                 const response = await axios.get('https://posinet.onrender.com/api/products');
@@ -137,6 +141,11 @@ export default {
                 this.productForm.images.forEach((image) => {
                     formData.append('images', image);
                 });
+
+                console.log('FormData contents:');
+                for (let pair of formData.entries()) {
+                    console.log(pair[0] + ': ' + pair[1]);
+                }
 
                 const token = localStorage.getItem('token');
                 if (!token) throw new Error('Authentication token is missing.');

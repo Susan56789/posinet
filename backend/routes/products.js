@@ -21,17 +21,18 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir);
 }
 
-// Set up multer storage to save files on disk
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/');
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
-});
 
-const upload = multer({ storage: storage });
+const upload = multer({
+    storage: multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, 'uploads/');
+        },
+        filename: function (req, file, cb) {
+            cb(null, Date.now() + path.extname(file.originalname));
+        }
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 const productSchema = Joi.object({
     title: Joi.string().required(),
@@ -71,20 +72,28 @@ module.exports = (client, app, authenticate) => {
 
     app.post('/api/products', authenticate, upload.array('images', 5), async (req, res) => {
         try {
+            console.log('Received product data:', req.body);
+            console.log('Received files:', req.files);
+
             // Process images first
             const images = [];
             if (req.files && req.files.length > 0) {
                 for (const file of req.files) {
                     const filename = `${Date.now()}_${file.originalname}`;
-                    const filePath = path.join('uploads', filename);
+                    const filePath = path.join(uploadsDir, filename);
 
-                    await sharp(file.path)
-                        .resize(300, 300)
-                        .toFile(filePath);
+                    try {
+                        await sharp(file.path)
+                            .resize(300, 300)
+                            .toFile(filePath);
 
-                    fs.unlinkSync(file.path); // Remove the original file
+                        fs.unlinkSync(file.path); // Remove the original file
 
-                    images.push({ filename, url: createImageURL(filename) });
+                        images.push({ filename, url: createImageURL(filename) });
+                    } catch (imageError) {
+                        console.error('Error processing image:', imageError);
+                        return res.status(500).json({ message: 'Error processing image', error: imageError.message });
+                    }
                 }
             }
 
@@ -119,10 +128,9 @@ module.exports = (client, app, authenticate) => {
             res.status(201).json({ ...newProduct, _id: result.insertedId });
         } catch (error) {
             console.error('Error creating product:', error);
-            res.status(500).json({ message: "Error creating product", error: error.message });
+            res.status(500).json({ message: "Error creating product", error: error.message, stack: error.stack });
         }
     });
-
 
     app.get('/api/products', authenticate, async (req, res) => {
         try {
