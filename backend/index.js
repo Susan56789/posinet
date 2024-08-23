@@ -66,6 +66,20 @@ const run = async () => {
         require('./routes/reports')(client, app, authenticate);
         require('./routes/activties')(client, app, authenticate);
 
+
+        // Serve images from the uploads directory
+        app.get('/api/images/:filename', (req, res) => {
+            const filename = req.params.filename;
+            const filePath = path.join(__dirname, 'uploads', filename);
+
+            fs.access(filePath, fs.constants.F_OK, (err) => {
+                if (err) {
+                    return res.status(404).json({ message: 'Image not found' });
+                }
+                res.sendFile(filePath);
+            });
+        });
+
         // Start the server
         app.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);

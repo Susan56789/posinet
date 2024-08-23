@@ -52,9 +52,7 @@ module.exports = (client, app, authenticate) => {
 
     app.post('/api/products', authenticate, upload.array('images', 5), async (req, res) => {
         try {
-            console.log('Received request body:', req.body);
-            console.log('Received files:', req.files);
-
+            // Validate and process the product data
             const productData = {
                 title: req.body.title,
                 description: req.body.description,
@@ -70,22 +68,16 @@ module.exports = (client, app, authenticate) => {
             const images = [];
             if (req.files && req.files.length > 0) {
                 for (const file of req.files) {
-                    const webpBuffer = await sharp(file.buffer)
-                        .webp({ quality: 80 })
-                        .toBuffer();
+                    const filename = Date.now() + '_' + file.originalname;
+                    const filePath = path.join('uploads', filename);
 
-                    const uploadStream = bucket.openUploadStream(file.originalname + '.webp', {
-                        contentType: 'image/webp'
-                    });
+                    await sharp(file.path)
+                        .resize(300, 300) // Optional: resize image
+                        .toFile(filePath);
 
-                    await new Promise((resolve, reject) => {
-                        uploadStream.end(webpBuffer, (error) => {
-                            if (error) reject(error);
-                            else resolve();
-                        });
-                    });
+                    fs.unlinkSync(file.path); // Remove the original file
 
-                    images.push({ filename: file.originalname + '.webp' });
+                    images.push({ filename, url: createImageURL(filename) });
                 }
             }
 
@@ -96,13 +88,11 @@ module.exports = (client, app, authenticate) => {
             };
 
             const result = await products.insertOne(newProduct);
-
             await logActivity('product', `Created product: ${productData.title}`);
 
             res.status(201).json({ ...newProduct, _id: result.insertedId });
         } catch (error) {
             console.error('Error creating product:', error);
-            console.error('Error details:', error.stack);
             res.status(500).json({ message: "Error creating product", error: error.message });
         }
     });
