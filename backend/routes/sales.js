@@ -76,4 +76,20 @@ module.exports = (client, app, authenticate) => {
             res.status(500).json({ message: 'Error deleting sale', error });
         }
     });
+
+    app.get('/api/sales/recent', authenticate, async (req, res) => {
+        try {
+            const limit = parseInt(req.query.limit) || 10; // Default limit to 10 if not provided
+            const recentSales = await database.collection('sales')
+                .find()
+                .sort({ date: -1 })  // Sort by most recent date
+                .limit(limit)
+                .toArray();
+
+            res.status(200).json(recentSales);
+        } catch (error) {
+            console.error('Error fetching recent sales:', error);
+            res.status(500).json({ message: 'Internal server error' });
+        }
+    });
 };

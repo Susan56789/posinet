@@ -5,9 +5,38 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
 
     app.get('/api/admin/dashboard', authenticate, async (req, res) => {
         try {
+            const today = new Date();
+
+            // Calculate the start of the week (Monday)
+            const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1));
+            startOfWeek.setHours(0, 0, 0, 0);
+
+            // Calculate the end of the week (Sunday)
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
+
             const productCount = await database.collection('products').countDocuments();
             const userCount = await database.collection('users').countDocuments();
-            const totalSales = await database.collection('sales').aggregate([{ $group: { _id: null, total: { $sum: "$amount" } } }]).toArray();
+
+            // Aggregate total sales for the current week
+            const totalSales = await database.collection('sales').aggregate([
+                {
+                    $match: {
+                        date: {
+                            $gte: startOfWeek,
+                            $lte: endOfWeek
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$totalAmount" } // Assuming `totalAmount` is the field storing the sale amount
+                    }
+                }
+            ]).toArray();
+
             const pendingOrders = await database.collection('sales').countDocuments({ status: 'Pending' });
 
             res.status(200).json({
@@ -21,6 +50,7 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
             res.status(500).json({ message: 'Internal server error' });
         }
     });
+
 
     // User Registration Endpoint
     app.post('/api/admin/register', async (req, res) => {

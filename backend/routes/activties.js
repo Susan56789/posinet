@@ -3,11 +3,11 @@ module.exports = (client, app, authenticate) => {
 
     app.get('/api/activities/recent', authenticate, async (req, res) => {
         try {
-            // Fetch recent activities from the 'activities' collection
+            const limit = parseInt(req.query.limit) || 10;
             const recentActivities = await database.collection('activities')
                 .find()
-                .sort({ timestamp: -1 })
-                .limit(10)
+                .sort({ date: -1 })
+                .limit(limit)
                 .toArray();
 
             res.status(200).json(recentActivities);
@@ -16,5 +16,6 @@ module.exports = (client, app, authenticate) => {
             res.status(500).json({ message: 'Internal server error' });
         }
     });
+
 };
 

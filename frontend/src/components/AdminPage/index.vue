@@ -17,7 +17,7 @@
                     </div>
                     <div class="text-center">
                         <p class="text-2xl font-bold text-yellow-600">{{ formatCurrency(stats.totalSales) }}</p>
-                        <p class="text-gray-600">Total Sales</p>
+                        <p class="text-gray-600">Sales This Week</p>
                     </div>
                     <div class="text-center">
                         <p class="text-2xl font-bold text-purple-600">{{ stats.pendingOrders }}</p>
@@ -141,7 +141,11 @@ export default {
         },
         async fetchRecentActivities() {
             try {
-                const response = await axios.get('https://posinet.onrender.com/api/activities/recent');
+                const response = await axios.get('https://posinet.onrender.com/api/activities/recent', {
+                    params: {
+                        limit: 10
+                    }
+                });
                 this.recentActivities = response.data;
             } catch (error) {
                 console.error('Error fetching recent activities:', error);
@@ -149,7 +153,11 @@ export default {
         },
         async fetchRecentSales() {
             try {
-                const response = await axios.get('https://posinet.onrender.com/api/sales/recent');
+                const response = await axios.get('https://posinet.onrender.com/api/sales/recent', {
+                    params: {
+                        limit: 10
+                    }
+                });
                 this.recentSales = response.data;
             } catch (error) {
                 console.error('Error fetching recent sales:', error);
