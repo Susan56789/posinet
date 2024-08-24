@@ -1,128 +1,61 @@
 const express = require('express');
-const Joi = require('joi');
-const sharp = require('sharp');
 const multer = require('multer');
 const path = require('path');
 const { ObjectId } = require('mongodb');
 const fs = require('fs');
-const GridFSBucket = require('mongodb').GridFSBucket;
-const helmet = require('helmet');
 
-const app = express();
-
-// Use helmet for basic security best practices
-app.use(helmet({
-    crossOriginEmbedderPolicy: false,
-}));
-
-// Ensure the uploads directory exists
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir);
-}
-
-
-const upload = multer({
-    storage: multer.diskStorage({
-        destination: function (req, file, cb) {
-            cb(null, 'uploads/');
-        },
-        filename: function (req, file, cb) {
-            cb(null, Date.now() + path.extname(file.originalname));
-        }
-    }),
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
-
-const productSchema = Joi.object({
-    title: Joi.string().required(),
-    description: Joi.string().required(),
-    price: Joi.number().required(),
-    stock: Joi.number().required(),
-    images: Joi.array().items(Joi.object({
-        filename: Joi.string().required(),
-        url: Joi.string().required()
-    }))
-});
-
-const createImageURL = (filename) => `/api/images/${filename}`;
-
-
-module.exports = (client, app, authenticate) => {
+module.exports = function (client, app, authenticate) {
+    const router = express.Router();
     const database = client.db("posinet");
     const products = database.collection("products");
-    const activities = database.collection("activities");
 
-    const bucket = new GridFSBucket(database, {
-        bucketName: 'images'
-    });
-
-    const logActivity = async (type, description) => {
-        try {
-            const activity = {
-                type,
-                description,
-                timestamp: new Date()
-            };
-            await activities.insertOne(activity);
-        } catch (error) {
-            console.error('Error logging activity:', error);
+    // Setup multer for image uploads
+    const storage = multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, 'uploads/');
+        },
+        filename: (req, file, cb) => {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
         }
-    };
+    });
+    const upload = multer({ storage: storage });
 
-    app.post('/api/products', authenticate, upload.array('images', 5), async (req, res) => {
+    // Create product route
+    router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
         try {
-            console.log('Received product data:', req.body);
-            console.log('Received files:', req.files);
+            const { title, description, price, stock } = req.body;
 
-            // Process images first
-            const images = [];
-            if (req.files && req.files.length > 0) {
-                for (const file of req.files) {
-                    const webpBuffer = await sharp(file.buffer)
-                        .webp({ quality: 80 })
-                        .toBuffer();
-
-                    const uploadStream = bucket.openUploadStream(file.originalname + '.webp', {
-                        contentType: 'image/webp'
-                    });
-                    uploadStream.end(webpBuffer);
-                    images.push({ filename: file.originalname + '.webp' });
-                }
+            if (!title || !description || !price || !stock) {
+                return res.status(400).json({ message: 'All fields are required.' });
             }
 
-            // Prepare product data including images
-            const productData = {
-                title: req.body.title,
-                description: req.body.description,
-                price: parseFloat(req.body.price),
-                stock: parseInt(req.body.stock),
-                images: images
-            };
+            const imagePaths = req.files.map(file => {
+                return {
+                    url: `https://posinet.onrender.com/api/images/${file.filename}`,
+                    filename: file.filename
+                };
+            });
 
-            // Validate product data
-            const { error } = productSchema.validate(productData);
-            if (error) {
-                return res.status(400).json({ message: "Invalid data", error: error.details[0].message });
-            }
-
-            // Create new product object
             const newProduct = {
-                ...productData,
+                title,
+                description,
+                price: parseFloat(price),
+                stock: parseInt(stock, 10),
+                images: imagePaths,
                 createdAt: new Date()
             };
 
-            // Insert product into database
             const result = await products.insertOne(newProduct);
 
-            // Log activity
-            await logActivity('product', `Created product: ${productData.title}`);
-
-            // Send response
-            res.status(201).json({ ...newProduct, _id: result.insertedId });
-        } catch (error) {
-            console.error('Error creating product:', error);
-            res.status(500).json({ message: "Error creating product", error: error.message, stack: error.stack });
+            if (result.insertedCount === 1) {
+                res.status(201).json({ message: 'Product created successfully', product: newProduct });
+            } else {
+                res.status(500).json({ message: 'Failed to create product' });
+            }
+        } catch (err) {
+            console.error('Error creating product:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
         }
     });
 

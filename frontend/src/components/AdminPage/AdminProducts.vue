@@ -114,18 +114,23 @@ export default {
             this.resetForm();
         },
         handleFileUpload(event) {
-            const files = Array.from(event.target.files);
-            this.productForm.images = files;
-            this.imagePreviews = [];
+            const files = event.target.files; // No need for Array.from()
+            this.productForm.images = []; // Reset the images array before adding new files
+            this.imagePreviews = []; // Reset the image previews array
 
-            files.forEach((file) => {
+            Array.from(files).forEach((file) => {
+                // Push the actual file to the images array
+                this.productForm.images.push(file);
+
                 const reader = new FileReader();
                 reader.onload = (e) => {
+                    // Push the base64 image preview to the previews array
                     this.imagePreviews.push(e.target.result);
                 };
                 reader.readAsDataURL(file);
             });
         },
+
         removeImage(index) {
             this.productForm.images.splice(index, 1);
             this.imagePreviews.splice(index, 1);
@@ -139,13 +144,8 @@ export default {
                 formData.append('stock', this.productForm.stock);
 
                 this.productForm.images.forEach((image) => {
-                    formData.append('images', image);
+                    formData.append('images', image); // Add each image file to FormData
                 });
-
-                console.log('FormData contents:');
-                for (let pair of formData.entries()) {
-                    console.log(pair[0] + ': ' + pair[1]);
-                }
 
                 const token = localStorage.getItem('token');
                 if (!token) throw new Error('Authentication token is missing.');
