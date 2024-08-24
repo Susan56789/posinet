@@ -144,6 +144,33 @@ module.exports = function (client, app, authenticate) {
             res.status(500).json({ message: 'Error deleting product', error: error.toString() });
         }
     });
+
+    app.get('/api/products/latest', authenticate, async (req, res) => {
+        try {
+            const latestProducts = await products.find().sort({ createdAt: -1 }).limit(10).toArray();
+            res.status(200).json(latestProducts);
+        } catch (error) {
+            console.error('Error fetching latest products:', error);
+            res.status(500).json({ message: 'Error fetching latest products', error });
+        }
+    });
+    app.get('/api/products/search', authenticate, async (req, res) => {
+        try {
+            const query = req.query.q;
+            const regex = new RegExp(query, 'i');
+            const searchedProducts = await products.find({
+                $or: [
+                    { title: regex },
+                    { description: regex }
+                ]
+            }).toArray();
+            res.status(200).json(searchedProducts);
+        } catch (error) {
+            console.error('Error searching for products:', error);
+            res.status(500).json({ message: 'Error searching for products', error });
+        }
+    });
+
 };
 
 
