@@ -2,6 +2,72 @@ module.exports = (client, app, authenticate) => {
     const { ObjectId } = require('mongodb');
     const database = client.db("posinet");
     const sales = database.collection("sales");
+    const customers = database.collection('customers');
+    const activities = database.collection('activities');
+
+
+    // Create a sale
+
+    app.post('/api/sales', authenticate, async (req, res) => {
+        try {
+            const { products, coupon, customerDetails, paymentMethod, totalAmount, date } = req.body;
+
+            // Create the sale
+            const saleResult = await sales.insertOne({
+                products,
+                coupon,
+                customerDetails,
+                paymentMethod,
+                totalAmount,
+                date
+            });
+
+            const saleId = saleResult.insertedId;
+
+            // Create or update customer
+            const { name, phone, email } = customerDetails;
+            let customer = await customers.findOne({ $or: [{ email }, { phone }] });
+
+            if (customer) {
+                // Update existing customer
+                await customers.updateOne(
+                    { _id: customer._id },
+                    {
+                        $set: {
+                            name,
+                            phone,
+                            email,
+                            lastPurchaseDate: date,
+                            lastSaleId: saleId
+                        },
+                        $inc: { totalPurchases: totalAmount }
+                    }
+                );
+            } else {
+                // Create new customer
+                await customers.insertOne({
+                    name,
+                    phone,
+                    email,
+                    lastPurchaseDate: date,
+                    totalPurchases: totalAmount,
+                    lastSaleId: saleId,
+                    creditLimit: 0 // Default credit limit
+                });
+            }
+
+            // Log activity
+            await logActivity('sales', `New Sale Amount: ${totalAmount}`);
+
+            res.status(201).json({
+                message: 'Sale completed successfully',
+                saleId: saleId.toString()
+            });
+        } catch (error) {
+            console.error('Error processing sale:', error);
+            res.status(500).json({ message: 'Error processing sale', error: error.message });
+        }
+    });
 
     const logActivity = async (type, description) => {
         try {
@@ -16,30 +82,6 @@ module.exports = (client, app, authenticate) => {
         }
     };
 
-    // Create a sale
-    app.post('/api/sales', authenticate, async (req, res) => {
-        try {
-            const { products, coupon, customerDetails, paymentMethod, totalAmount, date } = req.body;
-
-            // Store sale details in the customers collection
-            const result = await customers.insertOne({
-                customerDetails,
-                products,
-                totalAmount,
-                coupon,
-                paymentMethod,
-                date,
-                creditLimit: 0 // Default credit limit
-            });
-            // Log activity
-            await logActivity('sales', `New Sale Amount: ${totalAmount}`);
-
-            res.status(201).send(result.ops[0]);
-        } catch (error) {
-            res.status(500).send({ message: 'Error processing sale', error });
-        }
-    });
-
     // Get all sales
     app.get('/api/sales', authenticate, async (req, res) => {
         try {
@@ -48,6 +90,22 @@ module.exports = (client, app, authenticate) => {
         } catch (error) {
             console.error('Error fetching sales:', error);
             res.status(500).json({ message: 'Error fetching sales', error });
+        }
+    });
+
+    //Get Recent Sales
+    app.get('/api/sales/recent', authenticate, async (req, res) => {
+        try {
+            const limit = parseInt(req.query.limit) || 5;
+            const recentSales = await sales.find()
+                .sort({ date: -1 })
+                .limit(limit)
+                .toArray();
+
+            res.status(200).json(recentSales);
+        } catch (error) {
+            console.error('Error fetching recent sales:', error);
+            res.status(500).json({ message: 'Internal server error' });
         }
     });
 
@@ -99,19 +157,5 @@ module.exports = (client, app, authenticate) => {
         }
     });
 
-    app.get('/api/sales/recent', authenticate, async (req, res) => {
-        try {
-            const limit = parseInt(req.query.limit) || 10;
-            const recentSales = await sales
-                .find()
-                .sort({ date: -1 })
-                .limit(limit)
-                .toArray();
 
-            res.status(200).json(recentSales);
-        } catch (error) {
-            console.error('Error fetching recent sales:', error);
-            res.status(500).json({ message: 'Internal server error' });
-        }
-    });
 };

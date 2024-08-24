@@ -2,6 +2,9 @@
 module.exports = (client, app, authenticate, bcrypt, jwt) => {
     const database = client.db("posinet");
     const users = database.collection("admin");
+    const products = database.collection("products");
+    const sales = database.collection("sales");
+    const activities = database.collection("activities");
 
     app.get('/api/admin/dashboard', authenticate, async (req, res) => {
         try {
@@ -18,8 +21,8 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
             endOfWeek.setHours(23, 59, 59, 999);
 
             // Count products and users
-            const productCount = await database.collection('products').countDocuments();
-            const userCount = await database.collection('users').countDocuments();
+            const productCount = await products.countDocuments();
+            const userCount = await users.countDocuments();
 
             // Calculate total sales for the week
             const totalSales = await sales.aggregate([
@@ -42,19 +45,12 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
             // Get count of pending orders
             const pendingOrders = await sales.countDocuments({ status: 'Pending' });
 
-            // Fetch the latest 10 sales
-            const recentSales = await sales.find()
-                .sort({ date: -1 })  // Sort by most recent date
-                .limit(10)
-                .toArray();
-
             // Return the data to the frontend
             res.status(200).json({
                 productCount,
                 userCount,
                 totalSales: totalSales[0]?.total || 0,
-                pendingOrders,
-                recentSales
+                pendingOrders
             });
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
