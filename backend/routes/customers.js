@@ -2,7 +2,7 @@ const express = require('express');
 const { ObjectId } = require('mongodb');
 
 module.exports = function (client, app, authenticate) {
-    const router = express.Router();
+
     const database = client.db("posinet");
     const customers = database.collection("customers");
 
@@ -20,7 +20,7 @@ module.exports = function (client, app, authenticate) {
     };
 
     // Create a new customer
-    router.post('/api/customers', authenticate, async (req, res) => {
+    app.post('/api/customers', authenticate, async (req, res) => {
         try {
             const { name, phone, email, lastPurchaseDate, totalPurchases } = req.body;
 
@@ -54,7 +54,7 @@ module.exports = function (client, app, authenticate) {
         }
     });
     // Get customer details by ID
-    router.get('/customers/:id', authenticate, async (req, res) => {
+    app.get('/customers/:id', authenticate, async (req, res) => {
         const { id } = req.params;
         try {
             const customer = await customers.findOne({ _id: new ObjectId(id) });
@@ -69,7 +69,7 @@ module.exports = function (client, app, authenticate) {
     });
 
     // Update the credit limit for a customer (Admin only)
-    router.put('/customers/:id/credit-limit', authenticate, async (req, res) => {
+    app.put('/customers/:id/credit-limit', authenticate, async (req, res) => {
         const { id } = req.params;
         const { creditLimit } = req.body;
 
@@ -93,7 +93,7 @@ module.exports = function (client, app, authenticate) {
     });
 
     // Get all customers
-    router.get('/customers', authenticate, async (req, res) => {
+    app.get('/customers', authenticate, async (req, res) => {
         try {
             const allCustomers = await customers.find().toArray();
             res.status(200).json(allCustomers);
@@ -102,5 +102,5 @@ module.exports = function (client, app, authenticate) {
         }
     });
 
-    app.use('/api', router);
+    app.use('/api', app);
 };
