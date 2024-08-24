@@ -6,27 +6,22 @@ module.exports = (client, app, authenticate) => {
     // Create a sale
     app.post('/api/sales', authenticate, async (req, res) => {
         try {
-            const { productId, quantity, coupon, customerDetails, paymentMethod } = req.body;
+            const { products, coupon, customerDetails, paymentMethod, totalAmount, date } = req.body;
 
-            if (!productId || !quantity || !customerDetails || !paymentMethod) {
-                return res.status(400).json({ message: 'All fields are required' });
-            }
-
-            const newSale = {
-                productId: new ObjectId(productId),
-                quantity,
-                coupon,
+            // Store sale details in the customers collection
+            const result = await customers.insertOne({
                 customerDetails,
+                products,
+                totalAmount,
+                coupon,
                 paymentMethod,
-                saleDate: new Date()
-            };
+                date,
+                creditLimit: 0 // Default credit limit
+            });
 
-            const result = await sales.insertOne(newSale);
-
-            res.status(201).json({ message: 'Sale created successfully', sale: newSale });
+            res.status(201).send(result.ops[0]);
         } catch (error) {
-            console.error('Error creating sale:', error);
-            res.status(500).json({ message: 'Error creating sale', error });
+            res.status(500).send({ message: 'Error processing sale', error });
         }
     });
 

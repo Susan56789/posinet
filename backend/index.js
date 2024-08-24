@@ -67,6 +67,7 @@ const run = async () => {
         require('./routes/sales')(client, app, authenticate);
         require('./routes/reports')(client, app, authenticate);
         require('./routes/activties')(client, app, authenticate);
+        require('./routes/customers')(client, app, authenticate);
 
 
         // Serve images from the uploads directory
