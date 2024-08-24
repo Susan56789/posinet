@@ -3,6 +3,19 @@ module.exports = (client, app, authenticate) => {
     const database = client.db("posinet");
     const sales = database.collection("sales");
 
+    const logActivity = async (type, description) => {
+        try {
+            const activity = {
+                type,
+                description,
+                timestamp: new Date()
+            };
+            await activities.insertOne(activity);
+        } catch (error) {
+            console.error('Error logging activity:', error);
+        }
+    };
+
     // Create a sale
     app.post('/api/sales', authenticate, async (req, res) => {
         try {
@@ -18,6 +31,8 @@ module.exports = (client, app, authenticate) => {
                 date,
                 creditLimit: 0 // Default credit limit
             });
+            // Log activity
+            await logActivity('sales', `New Sale Amount: ${totalAmount}`);
 
             res.status(201).send(result.ops[0]);
         } catch (error) {
@@ -57,6 +72,10 @@ module.exports = (client, app, authenticate) => {
 
             const result = await sales.updateOne({ _id: ObjectId(id) }, { $set: updatedSale });
 
+            // Log activity
+            await logActivity('sale', `Updated Sale: ${id}`);
+
+
             res.status(200).json({ message: 'Sale updated successfully', sale: updatedSale });
         } catch (error) {
             console.error('Error updating sale:', error);
@@ -70,6 +89,9 @@ module.exports = (client, app, authenticate) => {
             const { id } = req.params;
 
             const result = await sales.deleteOne({ _id: ObjectId(id) });
+            // Log activity
+            await logActivity('sale', `Deleted Sale: ${id}`);
+
             res.status(200).json({ message: 'Sale deleted successfully' });
         } catch (error) {
             console.error('Error deleting sale:', error);
@@ -79,10 +101,10 @@ module.exports = (client, app, authenticate) => {
 
     app.get('/api/sales/recent', authenticate, async (req, res) => {
         try {
-            const limit = parseInt(req.query.limit) || 10; // Default limit to 10 if not provided
-            const recentSales = await database.collection('sales')
+            const limit = parseInt(req.query.limit) || 10;
+            const recentSales = await sales
                 .find()
-                .sort({ date: -1 })  // Sort by most recent date
+                .sort({ date: -1 })
                 .limit(limit)
                 .toArray();
 

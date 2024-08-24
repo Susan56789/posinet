@@ -259,17 +259,37 @@ export default {
                 date: new Date().toISOString()
             };
             try {
-                await axios.post('https://posinet.onrender.com/api/sales', sale, {
+                // Create sale
+                const saleResponse = await axios.post('https://posinet.onrender.com/api/sales', sale, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+
+                // Create or update customer
+                const customerData = {
+                    name: this.customerDetails.name,
+                    phone: this.customerDetails.phone,
+                    email: this.customerDetails.email,
+                    lastPurchaseDate: new Date().toISOString(),
+                    totalPurchases: this.totalAmount,
+                    lastSaleId: saleResponse.data.saleId  // Assuming the API returns the created sale's ID
+                };
+                await axios.post('https://posinet.onrender.com/api/customers', customerData, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
                 // Clear form
                 this.selectedProducts = [];
                 this.coupon = '';
                 this.customerDetails = { name: '', phone: '', email: '' };
                 this.totalAmount = 0;
                 this.error = '';
+
+                // Show success message
+                this.$emit('sale-completed', saleResponse.data.saleId);
+                alert(`Sale completed successfully! Sale ID: ${saleResponse.data.saleId}`);
             } catch (error) {
-                this.error = 'Error completing sale';
+                console.error('Error completing sale:', error);
+                this.error = 'Error completing sale: ' + (error.response?.data?.message || error.message);
             }
         },
         formatCurrency(value) {

@@ -9,6 +9,19 @@ module.exports = function (client, app, authenticate) {
     const database = client.db("posinet");
     const products = database.collection("products");
 
+    const logActivity = async (type, description) => {
+        try {
+            const activity = {
+                type,
+                description,
+                timestamp: new Date()
+            };
+            await activities.insertOne(activity);
+        } catch (error) {
+            console.error('Error logging activity:', error);
+        }
+    };
+
     // Setup multer for image uploads
     const storage = multer.diskStorage({
         destination: (req, file, cb) => {

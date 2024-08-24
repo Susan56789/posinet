@@ -30,9 +30,10 @@
             <div class="bg-white rounded-lg shadow p-6">
                 <h2 class="text-xl font-semibold mb-4">Recent Activities</h2>
                 <ul class="space-y-2">
-                    <li v-for="activity in recentActivities" :key="activity.id" class="flex items-center">
+                    <li v-for="activity in recentActivities" :key="activity._id" class="flex items-center">
                         <span class="w-4 h-4 rounded-full mr-2" :class="activityTypeColor(activity.type)"></span>
                         <p class="text-sm">{{ activity.description }}</p>
+                        <span class="text-xs text-gray-500 ml-auto">{{ formatDate(activity.timestamp) }}</span>
                     </li>
                 </ul>
             </div>
@@ -67,10 +68,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="sale in recentSales" :key="sale.id" class="border-b">
-                        <td class="py-2 px-4">{{ sale.orderId }}</td>
-                        <td class="py-2 px-4">{{ sale.customer }}</td>
-                        <td class="py-2 px-4">${{ sale.amount }}</td>
+                    <tr v-for="sale in recentSales" :key="sale._id" class="border-b">
+                        <td class="py-2 px-4">{{ sale._id }}</td>
+                        <td class="py-2 px-4">{{ sale.customerDetails.name }}</td>
+                        <td class="py-2 px-4">{{ formatCurrency(sale.totalAmount) }}</td>
                         <td class="py-2 px-4">
                             <span class="px-2 py-1 rounded text-xs" :class="saleStatusColor(sale.status)">
                                 {{ sale.status }}
@@ -96,8 +97,8 @@ export default {
                 totalSales: 0,
                 pendingOrders: 0,
             },
-            recentActivities: [],
             recentSales: [],
+            recentActivities: [],
         };
     },
     methods: {
@@ -106,15 +107,6 @@ export default {
             return isNaN(numericValue) ? '-' : numericValue.toLocaleString('en-KE', { style: 'currency', currency: 'KES' });
         },
 
-        activityTypeColor(type) {
-            const colors = {
-                product: 'bg-blue-500',
-                user: 'bg-green-500',
-                order: 'bg-yellow-500',
-                report: 'bg-purple-500',
-            };
-            return colors[type] || 'bg-gray-500';
-        },
         saleStatusColor(status) {
             const colors = {
                 Completed: 'bg-green-200 text-green-800',
@@ -124,45 +116,68 @@ export default {
             };
             return colors[status] || 'bg-gray-200 text-gray-800';
         },
+
         async fetchDashboardData() {
             try {
-                const { data } = await axios.get('https://posinet.onrender.com/api/admin/dashboard', {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
+                const [dashboardData, recentSalesData, activitiesData] = await Promise.all([
+                    axios.get('https://posinet.onrender.com/api/admin/dashboard', {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem('token')}`
+                        }
+                    }),
+                    axios.get('https://posinet.onrender.com/api/sales/recent', {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem('token')}`
+                        },
+                        params: {
+                            limit: 5 // Adjust this number as needed
+                        }
+                    }),
+                    axios.get('https://posinet.onrender.com/api/activities/recent', {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem('token')}`
+                        },
+                        params: {
+                            limit: 5 // Adjust this number as needed
+                        }
+                    })
+                ]);
+
+                const { data } = dashboardData;
                 this.stats.productCount = data.productCount;
                 this.stats.userCount = data.userCount;
                 this.stats.totalSales = data.totalSales;
                 this.stats.pendingOrders = data.pendingOrders;
+
+                this.recentSales = recentSalesData.data;
+
+                this.recentActivities = activitiesData.data;
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
             }
         },
-        async fetchRecentActivities() {
-            try {
-                const response = await axios.get('https://posinet.onrender.com/api/activities/recent', {
-                    params: {
-                        limit: 10
-                    }
-                });
-                this.recentActivities = response.data;
-            } catch (error) {
-                console.error('Error fetching recent activities:', error);
-            }
+
+        formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
         },
-        async fetchRecentSales() {
-            try {
-                const response = await axios.get('https://posinet.onrender.com/api/sales/recent', {
-                    params: {
-                        limit: 10
-                    }
-                });
-                this.recentSales = response.data;
-            } catch (error) {
-                console.error('Error fetching recent sales:', error);
-            }
+
+        activityTypeColor(type) {
+            const colors = {
+                'new-user': 'bg-blue-500',
+                'new-order': 'bg-green-500',
+                'product-update': 'bg-yellow-500',
+                // Add more types and colors as needed
+            };
+            return colors[type] || 'bg-gray-500';
         },
+
         addProduct() {
             // Implement add product functionality
         },
@@ -175,8 +190,6 @@ export default {
     },
     mounted() {
         this.fetchDashboardData();
-        this.fetchRecentActivities();
-        this.fetchRecentSales();
     },
 };
 </script>

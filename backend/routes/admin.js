@@ -5,22 +5,24 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
 
     app.get('/api/admin/dashboard', authenticate, async (req, res) => {
         try {
-            const today = new Date();
+            // Get the current date
+            const currentDate = new Date();
 
-            // Calculate the start of the week (Monday)
-            const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1));
+            // Calculate the start of the week (Monday) and the end of the week (Sunday)
+            const startOfWeek = new Date(currentDate);
+            startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1); // Monday
             startOfWeek.setHours(0, 0, 0, 0);
 
-            // Calculate the end of the week (Sunday)
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            const endOfWeek = new Date(currentDate);
+            endOfWeek.setDate(startOfWeek.getDate() + 6); // Sunday
             endOfWeek.setHours(23, 59, 59, 999);
 
+            // Count products and users
             const productCount = await database.collection('products').countDocuments();
             const userCount = await database.collection('users').countDocuments();
 
-            // Aggregate total sales for the current week
-            const totalSales = await database.collection('sales').aggregate([
+            // Calculate total sales for the week
+            const totalSales = await sales.aggregate([
                 {
                     $match: {
                         date: {
@@ -32,24 +34,34 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
                 {
                     $group: {
                         _id: null,
-                        total: { $sum: "$totalAmount" } // Assuming `totalAmount` is the field storing the sale amount
+                        total: { $sum: "$totalAmount" }
                     }
                 }
             ]).toArray();
 
-            const pendingOrders = await database.collection('sales').countDocuments({ status: 'Pending' });
+            // Get count of pending orders
+            const pendingOrders = await sales.countDocuments({ status: 'Pending' });
 
+            // Fetch the latest 10 sales
+            const recentSales = await sales.find()
+                .sort({ date: -1 })  // Sort by most recent date
+                .limit(10)
+                .toArray();
+
+            // Return the data to the frontend
             res.status(200).json({
                 productCount,
                 userCount,
                 totalSales: totalSales[0]?.total || 0,
-                pendingOrders
+                pendingOrders,
+                recentSales
             });
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
             res.status(500).json({ message: 'Internal server error' });
         }
     });
+
 
 
     // User Registration Endpoint

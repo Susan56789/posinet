@@ -6,24 +6,53 @@ module.exports = function (client, app, authenticate) {
     const database = client.db("posinet");
     const customers = database.collection("customers");
 
-    // Create a new customer
-    router.post('/customers', authenticate, async (req, res) => {
-        const { name, phone, email } = req.body;
+    const logActivity = async (type, description) => {
         try {
-            const newCustomer = {
-                name,
-                phone,
-                email,
-                amount: 0, // Initial amount is 0
-                creditLimit: 0 // Initial credit limit is 0
+            const activity = {
+                type,
+                description,
+                timestamp: new Date()
             };
-            const result = await customers.insertOne(newCustomer);
-            res.status(201).json({ message: 'Customer added successfully', customerId: result.insertedId });
+            await activities.insertOne(activity);
         } catch (error) {
-            res.status(500).json({ message: 'Failed to add customer', error });
+            console.error('Error logging activity:', error);
+        }
+    };
+
+    // Create a new customer
+    router.post('/api/customers', authenticate, async (req, res) => {
+        try {
+            const { name, phone, email, lastPurchaseDate, totalPurchases } = req.body;
+
+            // Check if customer exists
+            let customer = await customers.findOne({ $or: [{ email }, { phone }] });
+
+            if (customer) {
+                // Update existing customer
+                await customers.updateOne(
+                    { _id: customer._id },
+                    {
+                        $set: { name, phone, email, lastPurchaseDate },
+                        $inc: { totalPurchases: totalPurchases }
+                    }
+                );
+            } else {
+                // Create new customer
+                await customers.insertOne({
+                    name,
+                    phone,
+                    email,
+                    lastPurchaseDate,
+                    totalPurchases
+                });
+            }
+
+            res.status(200).json({ message: 'Customer data updated successfully' });
+        } catch (error) {
+            console.error('Error updating customer data:', error);
+            res.status(500).json({ message: 'Error updating customer data', error: error.message });
         }
     });
-
     // Get customer details by ID
     router.get('/customers/:id', authenticate, async (req, res) => {
         const { id } = req.params;
