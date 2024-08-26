@@ -1,14 +1,18 @@
-const express = require('express');
-const multer = require('multer');
-const path = require('path');
 const { ObjectId } = require('mongodb');
-const fs = require('fs');
+const multer = require('multer');
+const stream = require('stream');
 
 module.exports = function (client, app, authenticate) {
-    const router = express.Router();
+
     const database = client.db("posinet");
     const products = database.collection("products");
 
+    // Multer setup to handle file uploads in memory
+    const upload = multer({
+        storage: multer.memoryStorage(), // Keep files in memory temporarily
+    });
+
+    // Log activity for product operations
     const logActivity = async (type, description) => {
         try {
             const activity = {
@@ -16,26 +20,14 @@ module.exports = function (client, app, authenticate) {
                 description,
                 timestamp: new Date()
             };
-            await activities.insertOne(activity);
+            await database.collection('activities').insertOne(activity);
         } catch (error) {
             console.error('Error logging activity:', error);
         }
     };
 
-    // Setup multer for image uploads
-    const storage = multer.diskStorage({
-        destination: (req, file, cb) => {
-            cb(null, 'uploads/');
-        },
-        filename: (req, file, cb) => {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-        }
-    });
-    const upload = multer({ storage: storage });
-
     // Create product route
-    router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
+    app.post('/api/products', authenticate, upload.array('images', 10), async (req, res) => {
         try {
             const { title, description, price, stock } = req.body;
 
@@ -43,19 +35,17 @@ module.exports = function (client, app, authenticate) {
                 return res.status(400).json({ message: 'All fields are required.' });
             }
 
-            const imagePaths = req.files.map(file => {
-                return {
-                    url: `https://posinet.onrender.com/api/images/${file.filename}`,
-                    filename: file.filename
-                };
-            });
+            const images = req.files.map(file => ({
+                data: file.buffer.toString('base64'),
+                contentType: file.mimetype
+            }));
 
             const newProduct = {
                 title,
                 description,
                 price: parseFloat(price),
                 stock: parseInt(stock, 10),
-                images: imagePaths,
+                images, // Store images directly in the product document
                 createdAt: new Date()
             };
 
@@ -72,7 +62,8 @@ module.exports = function (client, app, authenticate) {
         }
     });
 
-    app.get('/api/products', authenticate, async (req, res) => {
+    // Get all products
+    app.get('/api/products', async (req, res) => {
         try {
             const productList = await products.find().toArray();
             res.status(200).json(productList);
@@ -82,6 +73,7 @@ module.exports = function (client, app, authenticate) {
         }
     });
 
+    // Update product route
     app.put('/api/product/:id', authenticate, upload.array('images', 5), async (req, res) => {
         try {
             const { id } = req.params;
@@ -93,52 +85,38 @@ module.exports = function (client, app, authenticate) {
                 stock: parseInt(req.body.stock)
             };
 
-            const { error } = productSchema.validate(productData);
-            if (error) {
-                return res.status(400).json({ message: "Invalid data", error: error.details[0].message });
+            if (!productData.title || !productData.description || isNaN(productData.price) || isNaN(productData.stock)) {
+                return res.status(400).json({ message: 'Invalid product data' });
             }
-
-            const updatedProduct = { ...productData };
 
             // Process new images if any
-            const images = [];
             if (req.files && req.files.length > 0) {
-                for (const file of req.files) {
-                    const webpBuffer = await sharp(file.buffer)
-                        .webp({ quality: 80 })
-                        .toBuffer();
-
-                    const uploadStream = bucket.openUploadStream(file.originalname + '.webp', {
-                        contentType: 'image/webp'
-                    });
-                    uploadStream.end(webpBuffer);
-                    images.push({ filename: file.originalname + '.webp' });
-                }
+                productData.images = req.files.map(file => ({
+                    data: file.buffer.toString('base64'),
+                    contentType: file.mimetype
+                }));
             }
 
-            // Update the product
             const result = await products.updateOne(
                 { _id: new ObjectId(id) },
-                { $set: updatedProduct }
+                { $set: productData }
             );
 
             if (result.matchedCount === 0) {
                 return res.status(404).json({ message: 'Product not found' });
             }
 
-            // Log activity
             await logActivity('product', `Updated product ID: ${id}`);
 
-            // Fetch the updated product to return in the response
             const updatedProductData = await products.findOne({ _id: new ObjectId(id) });
-
             res.status(200).json(updatedProductData);
         } catch (error) {
             console.error('Error updating product:', error);
-            res.status(500).json({ message: 'Error updating product', error: error.toString() });
+            res.status(500).json({ message: 'Error updating product', error: error.message });
         }
     });
 
+    // Delete product route
     app.delete('/api/product/:id', authenticate, async (req, res) => {
         try {
             const { id } = req.params;
@@ -148,7 +126,6 @@ module.exports = function (client, app, authenticate) {
                 return res.status(404).json({ message: 'Product not found' });
             }
 
-            // Log activity
             await logActivity('product', `Deleted product ID: ${id}`);
 
             res.status(200).json({ message: 'Product deleted successfully' });
@@ -158,6 +135,7 @@ module.exports = function (client, app, authenticate) {
         }
     });
 
+    // Get the latest products
     app.get('/api/products/latest', authenticate, async (req, res) => {
         try {
             const latestProducts = await products.find().sort({ createdAt: -1 }).limit(10).toArray();
@@ -167,6 +145,8 @@ module.exports = function (client, app, authenticate) {
             res.status(500).json({ message: 'Error fetching latest products', error });
         }
     });
+
+    // Search for products by title or description
     app.get('/api/products/search', authenticate, async (req, res) => {
         try {
             const query = req.query.q;
@@ -183,7 +163,4 @@ module.exports = function (client, app, authenticate) {
             res.status(500).json({ message: 'Error searching for products', error });
         }
     });
-
 };
-
-

@@ -114,9 +114,9 @@ export default {
             this.resetForm();
         },
         handleFileUpload(event) {
-            const files = event.target.files; // No need for Array.from()
-            this.productForm.images = []; // Reset the images array before adding new files
-            this.imagePreviews = []; // Reset the image previews array
+            const files = event.target.files;
+            this.productForm.images = [];
+            this.imagePreviews = [];
 
             Array.from(files).forEach((file) => {
                 // Push the actual file to the images array

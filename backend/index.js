@@ -83,6 +83,34 @@ const run = async () => {
             });
         });
 
+        app.get('/api/images/:id', async (req, res) => {
+            try {
+                const { id } = req.params;
+                const bucket = new GridFSBucket(database, {
+                    bucketName: 'images',
+                });
+
+                const downloadStream = bucket.openDownloadStream(new ObjectId(id));
+
+                downloadStream.on('data', (chunk) => {
+                    res.write(chunk);
+                });
+
+                downloadStream.on('error', (err) => {
+                    console.error('Error streaming image from GridFS:', err);
+                    res.status(404).json({ message: 'Image not found' });
+                });
+
+                downloadStream.on('end', () => {
+                    res.end();
+                });
+            } catch (error) {
+                console.error('Error fetching image:', error);
+                res.status(500).json({ message: 'Error fetching image', error: error.message });
+            }
+        });
+
+
         // Start the server
         app.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
