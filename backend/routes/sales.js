@@ -5,12 +5,15 @@ module.exports = (client, app, authenticate) => {
     const customers = database.collection('customers');
     const activities = database.collection('activities');
 
-
     // Create a sale
-
     app.post('/api/sales', authenticate, async (req, res) => {
         try {
             const { products, coupon, customerDetails, paymentMethod, totalAmount, date } = req.body;
+
+            // Validate required fields
+            if (!products || !customerDetails || !paymentMethod || !totalAmount || !date) {
+                return res.status(400).json({ message: 'All fields are required' });
+            }
 
             // Create the sale
             const saleResult = await sales.insertOne({
@@ -19,7 +22,7 @@ module.exports = (client, app, authenticate) => {
                 customerDetails,
                 paymentMethod,
                 totalAmount,
-                date
+                date: new Date(date)
             });
 
             const saleId = saleResult.insertedId;
@@ -37,7 +40,7 @@ module.exports = (client, app, authenticate) => {
                             name,
                             phone,
                             email,
-                            lastPurchaseDate: date,
+                            lastPurchaseDate: new Date(date),
                             lastSaleId: saleId
                         },
                         $inc: { totalPurchases: totalAmount }
@@ -49,7 +52,7 @@ module.exports = (client, app, authenticate) => {
                     name,
                     phone,
                     email,
-                    lastPurchaseDate: date,
+                    lastPurchaseDate: new Date(date),
                     totalPurchases: totalAmount,
                     lastSaleId: saleId,
                     creditLimit: 0 // Default credit limit
@@ -89,17 +92,15 @@ module.exports = (client, app, authenticate) => {
             res.status(200).json(salesList);
         } catch (error) {
             console.error('Error fetching sales:', error);
-            res.status(500).json({ message: 'Error fetching sales', error });
+            res.status(500).json({ message: 'Error fetching sales', error: error.message });
         }
     });
 
-    //Get Recent Sales
+    // Get Recent Sales (without limit)
     app.get('/api/sales/recent', authenticate, async (req, res) => {
         try {
-            const limit = parseInt(req.query.limit) || 5;
             const recentSales = await sales.find()
                 .sort({ date: -1 })
-                .limit(limit)
                 .toArray();
 
             res.status(200).json(recentSales);
@@ -113,31 +114,35 @@ module.exports = (client, app, authenticate) => {
     app.put('/api/sales/:id', authenticate, async (req, res) => {
         try {
             const { id } = req.params;
-            const { productId, quantity, coupon, customerDetails, paymentMethod } = req.body;
+            const { products, coupon, customerDetails, paymentMethod, totalAmount } = req.body;
 
-            if (!productId || !quantity || !customerDetails || !paymentMethod) {
+            // Validate required fields
+            if (!products || !customerDetails || !paymentMethod || !totalAmount) {
                 return res.status(400).json({ message: 'All fields are required' });
             }
 
             const updatedSale = {
-                productId: new ObjectId(productId),
-                quantity,
+                products,
                 coupon,
                 customerDetails,
                 paymentMethod,
-                saleDate: new Date()  // Update the sale date
+                totalAmount,
+                saleDate: new Date()  // Update the sale date to current
             };
 
             const result = await sales.updateOne({ _id: ObjectId(id) }, { $set: updatedSale });
 
-            // Log activity
-            await logActivity('sale', `Updated Sale: ${id}`);
+            if (result.matchedCount === 0) {
+                return res.status(404).json({ message: 'Sale not found' });
+            }
 
+            // Log activity
+            await logActivity('sales', `Updated Sale: ${id}`);
 
             res.status(200).json({ message: 'Sale updated successfully', sale: updatedSale });
         } catch (error) {
             console.error('Error updating sale:', error);
-            res.status(500).json({ message: 'Error updating sale', error });
+            res.status(500).json({ message: 'Error updating sale', error: error.message });
         }
     });
 
@@ -147,15 +152,18 @@ module.exports = (client, app, authenticate) => {
             const { id } = req.params;
 
             const result = await sales.deleteOne({ _id: ObjectId(id) });
+
+            if (result.deletedCount === 0) {
+                return res.status(404).json({ message: 'Sale not found' });
+            }
+
             // Log activity
-            await logActivity('sale', `Deleted Sale: ${id}`);
+            await logActivity('sales', `Deleted Sale: ${id}`);
 
             res.status(200).json({ message: 'Sale deleted successfully' });
         } catch (error) {
             console.error('Error deleting sale:', error);
-            res.status(500).json({ message: 'Error deleting sale', error });
+            res.status(500).json({ message: 'Error deleting sale', error: error.message });
         }
     });
-
-
 };

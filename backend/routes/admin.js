@@ -18,7 +18,7 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
             endOfWeek.setHours(23, 59, 59, 999);
 
             // Execute multiple DB operations in parallel
-            const [productCount, userCount, totalSales, pendingOrders] = await Promise.all([
+            const [productCount, userCount, totalSales, lowStockCount] = await Promise.all([
                 products.countDocuments(),
                 users.countDocuments(),
                 sales.aggregate([
@@ -37,21 +37,20 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
                         }
                     }
                 ]).toArray(),
-                sales.countDocuments({ status: 'Pending' })
+                products.countDocuments({ stock: { $lt: 5 } }) // Count products with stock < 5
             ]);
 
             res.status(200).json({
                 productCount,
                 userCount,
                 totalSales: totalSales[0]?.total || 0,
-                pendingOrders
+                lowStockCount // Replaces pendingOrders
             });
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
             res.status(500).json({ message: 'Internal server error' });
         }
     });
-
 
 
     // User Registration Endpoint

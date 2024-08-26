@@ -20,8 +20,8 @@
                         <p class="text-gray-600">Sales This Week</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-purple-600">{{ stats.pendingOrders }}</p>
-                        <p class="text-gray-600">Pending Orders</p>
+                        <p class="text-2xl font-bold text-red-600">{{ stats.needReorderCount }}</p>
+                        <p class="text-gray-600">Need Reorder</p>
                     </div>
                 </div>
             </div>
@@ -95,11 +95,11 @@ export default {
                 productCount: 0,
                 userCount: 0,
                 totalSales: 0,
-                pendingOrders: 0,
+                needReorderCount: 0, // New data field for products needing reorder
             },
             recentSales: [],
             recentActivities: [],
-            isLoading: true,  // Added loading state
+            isLoading: true, // Added loading state
         };
     },
     methods: {
@@ -130,17 +130,11 @@ export default {
                     axios.get('https://posinet.onrender.com/api/sales/recent', {
                         headers: {
                             Authorization: `Bearer ${localStorage.getItem('token')}`
-                        },
-                        params: {
-                            limit: 5 // Adjust this number as needed
                         }
                     }),
                     axios.get('https://posinet.onrender.com/api/activities/recent', {
                         headers: {
                             Authorization: `Bearer ${localStorage.getItem('token')}`
-                        },
-                        params: {
-                            limit: 5 // Adjust this number as needed
                         }
                     })
                 ]);
@@ -149,7 +143,7 @@ export default {
                 this.stats.productCount = data.productCount;
                 this.stats.userCount = data.userCount;
                 this.stats.totalSales = data.totalSales;
-                this.stats.pendingOrders = data.pendingOrders;
+                this.stats.needReorderCount = data.needReorderCount; // Set the count of products needing reorder
 
                 this.recentSales = recentSalesData.data || [];
                 this.recentActivities = activitiesData.data || [];

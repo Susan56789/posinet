@@ -1,13 +1,15 @@
+const { ObjectId } = require('mongodb');
+
 module.exports = (client, app, authenticate) => {
     const database = client.db("posinet");
+    const activities = database.collection("activities");
 
+    // Endpoint to fetch all recent activities
     app.get('/api/activities/recent', authenticate, async (req, res) => {
         try {
-            const limit = parseInt(req.query.limit) || 5;
             const recentActivities = await activities.find()
                 .sort({ timestamp: -1 })
-                .limit(limit)
-                .toArray();
+                .toArray(); // Return all activities, no limit applied here
 
             res.status(200).json(recentActivities);
         } catch (error) {
@@ -16,10 +18,11 @@ module.exports = (client, app, authenticate) => {
         }
     });
 
+    // Endpoint to fetch all activities with optional filters
     app.get('/api/activities', authenticate, async (req, res) => {
         try {
             const page = parseInt(req.query.page) || 1;
-            const limit = parseInt(req.query.limit) || 20;
+            const limit = parseInt(req.query.limit) || 20; // Default to 20 per page
             const skip = (page - 1) * limit;
 
             // Optional: date range filter
@@ -43,12 +46,10 @@ module.exports = (client, app, authenticate) => {
 
             const allActivities = await activities.find(query)
                 .sort({ timestamp: -1 })
-                .skip(skip)
-                .limit(limit)
-                .toArray();
+                .toArray(); // Fetch all activities that match the query
 
             res.status(200).json({
-                activities: allActivities,
+                activities: allActivities, // Return all activities; limit will be applied on the frontend
                 currentPage: page,
                 totalPages: totalPages,
                 totalActivities: totalActivities
@@ -82,7 +83,7 @@ module.exports = (client, app, authenticate) => {
         }
     });
 
-    // Endpoint to delete an activity (optional, use with caution)
+    // Endpoint to delete an activity
     app.delete('/api/activities/:id', authenticate, async (req, res) => {
         try {
             const result = await activities.deleteOne({ _id: new ObjectId(req.params.id) });
@@ -97,7 +98,4 @@ module.exports = (client, app, authenticate) => {
             res.status(500).json({ message: 'Internal server error' });
         }
     });
-
-
 };
-
