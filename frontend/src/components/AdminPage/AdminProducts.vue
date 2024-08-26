@@ -13,6 +13,7 @@
                 <input v-model="productForm.title" placeholder="Title" required class="border p-2 mb-2 w-full" />
                 <input v-model="productForm.description" placeholder="Description" required
                     class="border p-2 mb-2 w-full" />
+                <input v-model="productForm.category" placeholder="Category" required class="border p-2 mb-2 w-full" />
                 <input v-model="productForm.price" type="number" placeholder="Price" required
                     class="border p-2 mb-2 w-full" />
                 <input v-model="productForm.stock" type="number" placeholder="Stock" required
@@ -45,23 +46,26 @@
         <table class="w-full bg-white shadow rounded-lg">
             <thead>
                 <tr class="bg-gray-100 border-b">
-                    <th class="py-2 px-4">Title</th>
                     <th class="py-2 px-4">Images</th>
+                    <th class="py-2 px-4">Title</th>
                     <th class="py-2 px-4">Price</th>
                     <th class="py-2 px-4">Stock</th>
+                    <th class="py-2 px-4">Category</th>
                     <th class="py-2 px-4">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="product in products" :key="product._id" class="border-b">
-                    <td class="py-2 px-4">{{ product.title }}</td>
                     <td class="py-2 px-4">
                         <img v-if="product.imageUrl" :src="product.imageUrl" alt="product image"
                             class="w-16 h-16 object-cover" />
                         <span v-else>No image</span>
                     </td>
+                    <td class="py-2 px-4">{{ product.title }}</td>
+
                     <td class="py-2 px-4">{{ formatCurrency(product.price) }}</td>
                     <td class="py-2 px-4">{{ product.stock }}</td>
+                    <td class="py-2 px-4">{{ product.category }}</td>
                     <td class="py-2 px-4">
                         <button @click="editProduct(product)"
                             class="bg-yellow-500 text-white py-1 px-2 rounded hover:bg-yellow-600">Edit</button>
@@ -87,6 +91,7 @@ export default {
             productForm: {
                 title: '',
                 description: '',
+                category: '',
                 price: '',
                 stock: '',
                 images: []
@@ -146,6 +151,7 @@ export default {
                 formData.append('description', this.productForm.description);
                 formData.append('price', this.productForm.price);
                 formData.append('stock', this.productForm.stock);
+                formData.append('category', this.productForm.category);
 
                 this.productForm.images.forEach((image) => {
                     formData.append('images', image); // Add each image file to FormData
@@ -189,6 +195,7 @@ export default {
                 formData.append('description', this.productForm.description);
                 formData.append('price', this.productForm.price);
                 formData.append('stock', this.productForm.stock);
+                formData.append('category', this.productForm.category);
 
                 this.productForm.images.forEach((image) => {
                     formData.append('images', image);
@@ -227,6 +234,7 @@ export default {
                 title: '',
                 description: '',
                 price: '',
+                category: '',
                 stock: '',
                 images: []
             };

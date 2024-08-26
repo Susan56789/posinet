@@ -29,7 +29,7 @@ module.exports = function (client, app, authenticate) {
     // Create product route
     app.post('/api/products', authenticate, upload.array('images', 10), async (req, res) => {
         try {
-            const { title, description, price, stock } = req.body;
+            const { title, description, price, stock, category } = req.body;
 
             if (!title || !description || !price || !stock) {
                 return res.status(400).json({ message: 'All fields are required.' });
@@ -43,6 +43,7 @@ module.exports = function (client, app, authenticate) {
             const newProduct = {
                 title,
                 description,
+                category,
                 price: parseFloat(price),
                 stock: parseInt(stock, 10),
                 images, // Store images directly in the product document
@@ -80,6 +81,7 @@ module.exports = function (client, app, authenticate) {
 
             const productData = {
                 title: req.body.title,
+                category: req.body.category,
                 description: req.body.description,
                 price: parseFloat(req.body.price),
                 stock: parseInt(req.body.stock)
