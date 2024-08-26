@@ -6,49 +6,51 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
     const sales = database.collection("sales");
     const activities = database.collection("activities");
 
+    // Calculate the start and end of the current week
+    function getStartAndEndOfWeek() {
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0 (Sun) to 6 (Sat)
+        const numDaysFromSunday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
 
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - numDaysFromSunday);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        return { startOfWeek, endOfWeek };
+    }
+
+
+    // Dashboard data route
     app.get('/api/admin/dashboard', authenticate, async (req, res) => {
         try {
-            const currentDate = new Date();
-            const startOfWeek = new Date(currentDate);
-            startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1);
-            startOfWeek.setHours(0, 0, 0, 0);
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            endOfWeek.setHours(23, 59, 59, 999);
+            const productCount = await products.countDocuments();
 
-            // Execute multiple DB operations in parallel
-            const [productCount, userCount, totalSales, lowStockCount] = await Promise.all([
-                products.countDocuments(),
-                users.countDocuments(),
-                sales.aggregate([
-                    {
-                        $match: {
-                            date: {
-                                $gte: startOfWeek,
-                                $lte: endOfWeek
-                            }
-                        }
-                    },
-                    {
-                        $group: {
-                            _id: null,
-                            total: { $sum: "$totalAmount" }
-                        }
-                    }
-                ]).toArray(),
-                products.countDocuments({ stock: { $lt: 5 } }) // Count products with stock < 5
-            ]);
+            const needReorderCount = await products.countDocuments({ stock: { $lte: '$reorderLevel' } });
+
+            const userCount = await database.collection("users").countDocuments();
+
+            const { startOfWeek, endOfWeek } = getStartAndEndOfWeek();
+
+            const totalSales = await sales.aggregate([
+                { $match: { date: { $gte: startOfWeek, $lte: endOfWeek } } },
+                { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+            ]).toArray();
+
+            const totalSalesAmount = totalSales.length > 0 ? totalSales[0].total : 0;
 
             res.status(200).json({
                 productCount,
+                needReorderCount: needReorderCount || 0, // Default to zero if undefined
                 userCount,
-                totalSales: totalSales[0]?.total || 0,
-                lowStockCount // Replaces pendingOrders
+                totalSales: totalSalesAmount
             });
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
-            res.status(500).json({ message: 'Internal server error' });
+            res.status(500).json({ message: 'Error fetching dashboard data', error: error.message });
         }
     });
 

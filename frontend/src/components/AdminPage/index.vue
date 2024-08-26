@@ -29,11 +29,15 @@
             <!-- Recent Activities -->
             <div class="bg-white rounded-lg shadow p-6">
                 <h2 class="text-xl font-semibold mb-4">Recent Activities</h2>
-                <ul class="space-y-2">
-                    <li v-for="activity in recentActivities" :key="activity._id" class="flex items-center">
-                        <span class="w-4 h-4 rounded-full mr-2" :class="activityTypeColor(activity.type)"></span>
+                <ul class="space-y-2 overflow-y-auto max-h-72">
+                    <li v-for="(activity, index) in recentActivities" v-show="index < 10" :key="activity._id"
+                        class="flex items-center">
+                        <span class="w-4 h-4 rounded-full mr-2" :class="activityTypeColor(activity.type)">
+                        </span>
                         <p class="text-sm">{{ activity.description }}</p>
-                        <span class="text-xs text-gray-500 ml-auto">{{ formatDate(activity.timestamp) }}</span>
+                        <span class="text-xs text-gray-500 ml-auto">
+                            {{ formatDate(activity.timestamp) }}
+                        </span>
                     </li>
                 </ul>
             </div>
@@ -64,7 +68,7 @@
                         <th class="py-2 px-4">Order ID</th>
                         <th class="py-2 px-4">Customer</th>
                         <th class="py-2 px-4">Amount</th>
-                        <th class="py-2 px-4">Status</th>
+                        <th class="py-2 px-4">Payment</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -73,8 +77,8 @@
                         <td class="py-2 px-4">{{ sale.customerDetails.name }}</td>
                         <td class="py-2 px-4">{{ formatCurrency(sale.totalAmount) }}</td>
                         <td class="py-2 px-4">
-                            <span class="px-2 py-1 rounded text-xs" :class="saleStatusColor(sale.status)">
-                                {{ sale.status }}
+                            <span class="px-2 py-1 rounded text-xs" :class="saleStatusColor(sale.paymentMethod)">
+                                {{ sale.paymentMethod }}
                             </span>
                         </td>
                     </tr>
@@ -95,11 +99,11 @@ export default {
                 productCount: 0,
                 userCount: 0,
                 totalSales: 0,
-                needReorderCount: 0, // New data field for products needing reorder
+                needReorderCount: 0,
             },
             recentSales: [],
             recentActivities: [],
-            isLoading: true, // Added loading state
+            isLoading: true,
         };
     },
     methods: {
@@ -110,16 +114,16 @@ export default {
 
         saleStatusColor(status) {
             const colors = {
-                Completed: 'bg-green-200 text-green-800',
-                Pending: 'bg-yellow-200 text-yellow-800',
-                Processing: 'bg-blue-200 text-blue-800',
-                Shipped: 'bg-purple-200 text-purple-800',
+                Mpesa: 'bg-green-200 text-green-800',
+                Bank: 'bg-yellow-200 text-yellow-800',
+                Cash: 'bg-blue-200 text-blue-800',
+                Credit: 'bg-purple-200 text-purple-800',
             };
             return colors[status] || 'bg-gray-200 text-gray-800';
         },
 
         async fetchDashboardData() {
-            this.isLoading = true; // Start loading
+            this.isLoading = true;
             try {
                 const [dashboardData, recentSalesData, activitiesData] = await Promise.all([
                     axios.get('https://posinet.onrender.com/api/admin/dashboard', {
@@ -143,15 +147,15 @@ export default {
                 this.stats.productCount = data.productCount;
                 this.stats.userCount = data.userCount;
                 this.stats.totalSales = data.totalSales;
-                this.stats.needReorderCount = data.needReorderCount; // Set the count of products needing reorder
+                this.stats.needReorderCount = data.needReorderCount;
 
                 this.recentSales = recentSalesData.data || [];
                 this.recentActivities = activitiesData.data || [];
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
-                // Consider showing an error message in the UI
+
             } finally {
-                this.isLoading = false; // End loading
+                this.isLoading = false;
             }
         },
 
@@ -171,7 +175,6 @@ export default {
                 'new-user': 'bg-blue-500',
                 'new-order': 'bg-green-500',
                 'product-update': 'bg-yellow-500',
-                // Add more types and colors as needed
             };
             return colors[type] || 'bg-gray-500';
         },
@@ -197,5 +200,20 @@ export default {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+}
+
+ul.space-y-2 {
+    max-height: 18rem;
+    /* Set the height for the scrollable area */
+    overflow-y: auto;
+}
+
+ul.space-y-2::-webkit-scrollbar {
+    width: 8px;
+}
+
+ul.space-y-2::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
 }
 </style>
