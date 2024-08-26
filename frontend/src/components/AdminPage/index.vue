@@ -2,7 +2,7 @@
     <div class="admin-dashboard">
         <h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
             <!-- Quick Stats -->
             <div class="bg-white rounded-lg shadow p-6">
                 <h2 class="text-xl font-semibold mb-4">Quick Stats</h2>
@@ -43,21 +43,7 @@
                 </ul>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
-                <div class="space-y-2">
-                    <button @click="addProduct"
-                        class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200">Add
-                        Product</button>
-                    <button @click="manageUsers"
-                        class="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition duration-200">Manage
-                        Users</button>
-                    <button @click="viewReports"
-                        class="w-full bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 transition duration-200">View
-                        Reports</button>
-                </div>
-            </div>
+
         </div>
 
         <!-- Recent Sales -->
