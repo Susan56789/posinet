@@ -56,10 +56,9 @@
                 <tr v-for="product in products" :key="product._id" class="border-b">
                     <td class="py-2 px-4">{{ product.title }}</td>
                     <td class="py-2 px-4">
-                        <div class="flex gap-2">
-                            <img v-for="(image, index) in product.images" :key="index" :src="image.url"
-                                alt="product image" class="w-16 h-16 object-cover" />
-                        </div>
+                        <img v-if="product.imageUrl" :src="product.imageUrl" alt="product image"
+                            class="w-16 h-16 object-cover" />
+                        <span v-else>No image</span>
                     </td>
                     <td class="py-2 px-4">{{ formatCurrency(product.price) }}</td>
                     <td class="py-2 px-4">{{ product.stock }}</td>
@@ -103,7 +102,12 @@ export default {
         async fetchProducts() {
             try {
                 const response = await axios.get('https://posinet.onrender.com/api/products');
-                this.products = response.data;
+                this.products = response.data.map(product => ({
+                    ...product,
+                    imageUrl: product.images && product.images.length > 0
+                        ? `data:${product.images[0].contentType};base64,${product.images[0].data}`
+                        : null
+                }));
             } catch (error) {
                 console.error('Error fetching products:', error);
             }
@@ -176,7 +180,7 @@ export default {
                 ...product,
                 images: [] // Reset images array for new uploads
             };
-            this.imagePreviews = product.images.map(img => img.url || `https://posinet.onrender.com/api/images/${img.filename}`);
+            this.imagePreviews = product.imageUrl ? [product.imageUrl] : [];
         },
         async updateProduct() {
             try {
