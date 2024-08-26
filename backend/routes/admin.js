@@ -29,22 +29,32 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
         try {
             const productCount = await products.countDocuments();
 
-            const needReorderCount = await products.countDocuments({ stock: { $lte: '$reorderLevel' } });
+            // Update the needReorderCount calculation
+            const needReorderCount = await products.countDocuments({ stock: { $lt: 5 } });
 
             const userCount = await database.collection("users").countDocuments();
 
             const { startOfWeek, endOfWeek } = getStartAndEndOfWeek();
 
             const totalSales = await sales.aggregate([
-                { $match: { date: { $gte: startOfWeek, $lte: endOfWeek } } },
-                { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+                {
+                    $match: {
+                        date: { $gte: startOfWeek, $lte: endOfWeek }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$totalAmount" }
+                    }
+                }
             ]).toArray();
 
             const totalSalesAmount = totalSales.length > 0 ? totalSales[0].total : 0;
 
             res.status(200).json({
                 productCount,
-                needReorderCount: needReorderCount || 0, // Default to zero if undefined
+                needReorderCount,
                 userCount,
                 totalSales: totalSalesAmount
             });
@@ -53,6 +63,7 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
             res.status(500).json({ message: 'Error fetching dashboard data', error: error.message });
         }
     });
+
 
 
     // User Registration Endpoint

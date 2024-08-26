@@ -26,6 +26,7 @@
                 </div>
             </div>
 
+
             <!-- Recent Activities -->
             <div class="bg-white rounded-lg shadow p-6">
                 <h2 class="text-xl font-semibold mb-4">Recent Activities</h2>
