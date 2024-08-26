@@ -6,46 +6,40 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
     const sales = database.collection("sales");
     const activities = database.collection("activities");
 
+
     app.get('/api/admin/dashboard', authenticate, async (req, res) => {
         try {
-            // Get the current date
             const currentDate = new Date();
-
-            // Calculate the start of the week (Monday) and the end of the week (Sunday)
             const startOfWeek = new Date(currentDate);
-            startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1); // Monday
+            startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1);
             startOfWeek.setHours(0, 0, 0, 0);
-
-            const endOfWeek = new Date(currentDate);
-            endOfWeek.setDate(startOfWeek.getDate() + 6); // Sunday
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
             endOfWeek.setHours(23, 59, 59, 999);
 
-            // Count products and users
-            const productCount = await products.countDocuments();
-            const userCount = await users.countDocuments();
-
-            // Calculate total sales for the week
-            const totalSales = await sales.aggregate([
-                {
-                    $match: {
-                        date: {
-                            $gte: startOfWeek,
-                            $lte: endOfWeek
+            // Execute multiple DB operations in parallel
+            const [productCount, userCount, totalSales, pendingOrders] = await Promise.all([
+                products.countDocuments(),
+                users.countDocuments(),
+                sales.aggregate([
+                    {
+                        $match: {
+                            date: {
+                                $gte: startOfWeek,
+                                $lte: endOfWeek
+                            }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            total: { $sum: "$totalAmount" }
                         }
                     }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        total: { $sum: "$totalAmount" }
-                    }
-                }
-            ]).toArray();
+                ]).toArray(),
+                sales.countDocuments({ status: 'Pending' })
+            ]);
 
-            // Get count of pending orders
-            const pendingOrders = await sales.countDocuments({ status: 'Pending' });
-
-            // Return the data to the frontend
             res.status(200).json({
                 productCount,
                 userCount,

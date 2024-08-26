@@ -99,6 +99,7 @@ export default {
             },
             recentSales: [],
             recentActivities: [],
+            isLoading: true,  // Added loading state
         };
     },
     methods: {
@@ -118,6 +119,7 @@ export default {
         },
 
         async fetchDashboardData() {
+            this.isLoading = true; // Start loading
             try {
                 const [dashboardData, recentSalesData, activitiesData] = await Promise.all([
                     axios.get('https://posinet.onrender.com/api/admin/dashboard', {
@@ -149,11 +151,13 @@ export default {
                 this.stats.totalSales = data.totalSales;
                 this.stats.pendingOrders = data.pendingOrders;
 
-                this.recentSales = recentSalesData.data;
-
-                this.recentActivities = activitiesData.data;
+                this.recentSales = recentSalesData.data || [];
+                this.recentActivities = activitiesData.data || [];
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
+                // Consider showing an error message in the UI
+            } finally {
+                this.isLoading = false; // End loading
             }
         },
 
