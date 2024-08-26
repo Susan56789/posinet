@@ -54,7 +54,7 @@ module.exports = function (client, app, authenticate) {
         }
     });
     // Get customer details by ID
-    app.get('/customers/:id', authenticate, async (req, res) => {
+    app.get('/api/customers/:id', authenticate, async (req, res) => {
         const { id } = req.params;
         try {
             const customer = await customers.findOne({ _id: new ObjectId(id) });
@@ -69,7 +69,7 @@ module.exports = function (client, app, authenticate) {
     });
 
     // Update the credit limit for a customer (Admin only)
-    app.put('/customers/:id/credit-limit', authenticate, async (req, res) => {
+    app.put('/api/customers/:id/credit-limit', authenticate, async (req, res) => {
         const { id } = req.params;
         const { creditLimit } = req.body;
 
@@ -93,7 +93,7 @@ module.exports = function (client, app, authenticate) {
     });
 
     // Get all customers
-    app.get('/customers', authenticate, async (req, res) => {
+    app.get('/api/customers', authenticate, async (req, res) => {
         try {
             const allCustomers = await customers.find().toArray();
             res.status(200).json(allCustomers);
@@ -102,5 +102,5 @@ module.exports = function (client, app, authenticate) {
         }
     });
 
-    app.use('/api', app);
+
 };
