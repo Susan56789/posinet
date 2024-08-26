@@ -73,7 +73,28 @@ module.exports = function (client, app, authenticate) {
             res.status(500).json({ message: 'Error fetching products', error });
         }
     });
+// Get product by ID
+app.get('/api/product/:id', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        
+        // Ensure the id is a valid ObjectId
+        if (!ObjectId.isValid(productId)) {
+            return res.status(400).json({ message: 'Invalid product ID' });
+        }
 
+        const product = await products.findOne({ _id: new ObjectId(productId) });
+
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        res.status(200).json(product);
+    } catch (error) {
+        console.error('Error fetching product by ID:', error);
+        res.status(500).json({ message: 'Error fetching product', error: error.message });
+    }
+});
     // Update product route
     app.put('/api/product/:id', authenticate, upload.array('images', 5), async (req, res) => {
         try {
