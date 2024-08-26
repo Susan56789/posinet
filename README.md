@@ -111,8 +111,8 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 For any questions or inquiries, please contact us at:
 
-- **Email**: support@posinet.com
-- **Website**: [posinet.com](https://posinet.com)
+- **Email**: devnimoh@gmail.com
+- **Website**: [posinet.com](https://posinet.vercel.app/)
 
 ---
 

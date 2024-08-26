@@ -17,7 +17,7 @@
                     </div>
                     <div class="text-center">
                         <p class="text-2xl font-bold text-yellow-600">{{ formatCurrency(stats.totalSales) }}</p>
-                        <p class="text-gray-600">Sales This Week</p>
+                        <p class="text-gray-600">Sales Today</p>
                     </div>
                     <div class="text-center">
                         <p class="text-2xl font-bold text-red-600">{{ stats.needReorderCount }}</p>
@@ -99,7 +99,7 @@ export default {
             stats: {
                 productCount: 0,
                 userCount: 0,
-                totalSales: 0,
+                totalSales: 0, // This will now represent today's sales
                 needReorderCount: 0,
             },
             recentSales: [],
@@ -195,6 +195,7 @@ export default {
     },
 };
 </script>
+
 
 <style scoped>
 .admin-dashboard {

@@ -6,22 +6,7 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
     const sales = database.collection("sales");
     const activities = database.collection("activities");
 
-    // Calculate the start and end of the current week
-    function getStartAndEndOfWeek() {
-        const now = new Date();
-        const dayOfWeek = now.getDay(); // 0 (Sun) to 6 (Sat)
-        const numDaysFromSunday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
 
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - numDaysFromSunday);
-        startOfWeek.setHours(0, 0, 0, 0);
-
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-        endOfWeek.setHours(23, 59, 59, 999);
-
-        return { startOfWeek, endOfWeek };
-    }
 
 
     // Dashboard data route
@@ -34,12 +19,17 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
 
             const userCount = await database.collection("users").countDocuments();
 
-            const { startOfWeek, endOfWeek } = getStartAndEndOfWeek();
+            // Calculate start and end of the current day
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0); // Set time to 00:00:00
+            const endOfDay = new Date();
+            endOfDay.setHours(23, 59, 59, 999); // Set time to 23:59:59
 
-            const totalSales = await sales.aggregate([
+            // Aggregate total sales for today
+            const totalSalesToday = await sales.aggregate([
                 {
                     $match: {
-                        date: { $gte: startOfWeek, $lte: endOfWeek }
+                        date: { $gte: startOfDay, $lte: endOfDay }
                     }
                 },
                 {
@@ -50,19 +40,20 @@ module.exports = (client, app, authenticate, bcrypt, jwt) => {
                 }
             ]).toArray();
 
-            const totalSalesAmount = totalSales.length > 0 ? totalSales[0].total : 0;
+            const totalSalesAmountToday = totalSalesToday.length > 0 ? totalSalesToday[0].total : 0;
 
             res.status(200).json({
                 productCount,
                 needReorderCount,
                 userCount,
-                totalSales: totalSalesAmount
+                totalSales: totalSalesAmountToday
             });
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
             res.status(500).json({ message: 'Error fetching dashboard data', error: error.message });
         }
     });
+
 
 
 
