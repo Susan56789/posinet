@@ -259,10 +259,13 @@ export default {
                 date: new Date().toISOString()
             };
             try {
+                console.log('Sending sale data:', JSON.stringify(sale));
                 // Create sale
                 const saleResponse = await axios.post('https://posinet.onrender.com/api/sales', sale, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+
+                console.log('Sale response:', saleResponse.data);
 
                 // Create or update customer
                 const customerData = {
@@ -271,11 +274,14 @@ export default {
                     email: this.customerDetails.email,
                     lastPurchaseDate: new Date().toISOString(),
                     totalPurchases: this.totalAmount,
-                    lastSaleId: saleResponse.data.saleId  // Assuming the API returns the created sale's ID
+                    lastSaleId: saleResponse.data.saleId
                 };
-                await axios.post('https://posinet.onrender.com/api/customers', customerData, {
+                console.log('Sending customer data:', JSON.stringify(customerData));
+                const customerResponse = await axios.post('https://posinet.onrender.com/api/customers', customerData, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+
+                console.log('Customer response:', customerResponse.data);
 
                 // Clear form
                 this.selectedProducts = [];
@@ -289,6 +295,15 @@ export default {
                 alert(`Sale completed successfully! Sale ID: ${saleResponse.data.saleId}`);
             } catch (error) {
                 console.error('Error completing sale:', error);
+                if (error.response) {
+                    console.error('Error response:', error.response.data);
+                    console.error('Error status:', error.response.status);
+                    console.error('Error headers:', error.response.headers);
+                } else if (error.request) {
+                    console.error('Error request:', error.request);
+                } else {
+                    console.error('Error message:', error.message);
+                }
                 this.error = 'Error completing sale: ' + (error.response?.data?.message || error.message);
             }
         },

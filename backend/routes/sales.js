@@ -1,5 +1,6 @@
 module.exports = (client, app, authenticate) => {
     const { ObjectId } = require('mongodb');
+    const { v4: uuidv4 } = require('uuid');
     const database = client.db("posinet");
     const sales = database.collection("sales");
     const customers = database.collection('customers');
@@ -18,93 +19,107 @@ module.exports = (client, app, authenticate) => {
         }
     };
 
-    // Create a sale
+    //create new sale
     app.post('/api/sales', authenticate, async (req, res) => {
+        const session = await client.startSession();
+        session.startTransaction();
+
         try {
             const { products, coupon, customerDetails, paymentMethod, totalAmount, date } = req.body;
 
+            console.log('Received sale data:', req.body);
+
             // Validate required fields
             if (!products || !customerDetails || !paymentMethod || !totalAmount || !date) {
-                return res.status(400).json({ message: 'All fields are required' });
+                throw new Error('All fields are required');
             }
 
-            // Start a session for the transaction
-            const session = client.startSession();
+            // Generate a unique sale ID
+            const saleId = uuidv4();
 
-            try {
-                await session.withTransaction(async () => {
-                    // Update product stock
-                    for (const product of products) {
-                        const result = await database.collection("products").updateOne(
-                            { _id: new ObjectId(product.productId) },
-                            { $inc: { stock: -product.quantity } },
-                            { session }
-                        );
+            // Create the sale
+            const sale = {
+                _id: saleId,
+                products,
+                coupon,
+                customerDetails,
+                paymentMethod,
+                totalAmount,
+                date: new Date(date)
+            };
 
-                        if (result.modifiedCount === 0) {
-                            throw new Error(`Product ${product.productId} not found or insufficient stock`);
-                        }
-                    }
+            const saleResult = await sales.insertOne(sale, { session });
 
-                    // Create the sale
-                    const saleResult = await sales.insertOne({
-                        products,
-                        coupon,
-                        customerDetails,
-                        paymentMethod,
-                        totalAmount,
-                        date: new Date(date)
-                    }, { session });
+            if (!saleResult.insertedId) {
+                throw new Error('Failed to create sale');
+            }
 
-                    const saleId = saleResult.insertedId;
+            // Update product stock
+            for (const product of products) {
+                const result = await database.collection("products").updateOne(
+                    { _id: new ObjectId(product.productId) },
+                    { $inc: { stock: -product.quantity } },
+                    { session }
+                );
 
-                    // Create or update customer
-                    const { name, phone, email } = customerDetails;
-                    let customer = await customers.findOne({ $or: [{ email }, { phone }] }, { session });
+                if (result.modifiedCount === 0) {
+                    throw new Error(`Product ${product.productId} not found or insufficient stock`);
+                }
+            }
 
-                    if (customer) {
-                        // Update existing customer
-                        await customers.updateOne(
-                            { _id: customer._id },
-                            {
-                                $set: {
-                                    name,
-                                    phone,
-                                    email,
-                                    lastPurchaseDate: new Date(date),
-                                    lastSaleId: saleId
-                                },
-                                $inc: { totalPurchases: totalAmount }
-                            },
-                            { session }
-                        );
-                    } else {
-                        // Create new customer
-                        await customers.insertOne({
+            // Create or update customer
+            const { name, phone, email } = customerDetails;
+            let customer = await customers.findOne({ $or: [{ email }, { phone }] }, { session });
+
+            if (customer) {
+                // Update existing customer
+                await customers.updateOne(
+                    { _id: customer._id },
+                    {
+                        $set: {
                             name,
                             phone,
                             email,
                             lastPurchaseDate: new Date(date),
-                            totalPurchases: totalAmount,
-                            lastSaleId: saleId,
-                            creditLimit: 0 // Default credit limit
-                        }, { session });
-                    }
-
-                    // Log activity
-                    await logActivity('sales', `New Sale Amount: ${totalAmount}`);
-                });
-
-                res.status(201).json({
-                    message: 'Sale completed successfully',
-                    saleId: saleId.toString()
-                });
-            } finally {
-                await session.endSession();
+                            lastSaleId: saleId
+                        },
+                        $inc: { totalPurchases: totalAmount }
+                    },
+                    { session }
+                );
+            } else {
+                // Create new customer
+                await customers.insertOne({
+                    name,
+                    phone,
+                    email,
+                    lastPurchaseDate: new Date(date),
+                    totalPurchases: totalAmount,
+                    lastSaleId: saleId,
+                    creditLimit: 0 // Default credit limit
+                }, { session });
             }
+
+            // Commit the transaction
+            await session.commitTransaction();
+
+            res.status(201).json({
+                message: 'Sale completed successfully',
+                saleId: saleId
+            });
+
         } catch (error) {
+            // If an error occurred, abort the transaction
+            await session.abortTransaction();
+
             console.error('Error processing sale:', error);
-            res.status(500).json({ message: 'Error processing sale', error: error.message });
+            res.status(500).json({
+                message: 'Error processing sale',
+                error: error.message,
+                stack: error.stack
+            });
+        } finally {
+            await session.endSession();
         }
     });
 
