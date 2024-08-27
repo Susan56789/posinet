@@ -94,6 +94,7 @@ const routes = [
             {
                 path: '/receipt/:saleId',
                 name: 'ReceiptPage',
+                props: true,
                 component: () => import('@/components/ReceiptPage.vue'),
                 meta: { breadcrumb: 'Receipt', title: 'Receipt', requiresAuth: true }
             },

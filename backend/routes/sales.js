@@ -212,19 +212,20 @@ module.exports = (client, app, authenticate) => {
     // Get a specific sale by ID
     app.get('/api/sales/:id', authenticate, async (req, res) => {
         try {
-            const { id } = req.params;
-            const sale = await sales.findOne({ _id: id });
+            const { id } = req.params; // Extracting the sale ID from the request parameters
+            const sale = await sales.findOne({ _id: id }); // Finding the sale in the database
 
             if (!sale) {
-                return res.status(404).json({ message: 'Sale not found' });
+                return res.status(404).json({ message: 'Sale not found' }); // Handle case where the sale is not found
             }
 
-            res.status(200).json(sale);
+            res.status(200).json(sale); // Return the sale data if found
         } catch (error) {
             console.error('Error fetching sale:', error);
-            res.status(500).json({ message: 'Error fetching sale', error: error.message });
+            res.status(500).json({ message: 'Error fetching sale', error: error.message }); // Handle server errors
         }
     });
+
 
     // Search sales
     app.get('/api/sales/search', authenticate, async (req, res) => {

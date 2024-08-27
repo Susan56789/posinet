@@ -20,7 +20,7 @@
             </div>
 
             <!-- Product List -->
-            <table class="w-full my-6 border-collapse" v-if="receipt.products.length > 0">
+            <table class="w-full my-6 border-collapse" v-if="receipt.products && receipt.products.length > 0">
                 <thead>
                     <tr>
                         <th class="p-2 border text-left">Item</th>
@@ -73,6 +73,7 @@
         </div>
     </div>
 </template>
+
 <script>
 import axios from "axios";
 
@@ -81,7 +82,7 @@ export default {
     data() {
         return {
             loading: true,
-            receiptId: this.$route.params.id || "",
+            receiptId: this.$route.params.saleId || "", // Correctly extract saleId from URL parameters
             receipt: {
                 customerDetails: {
                     name: "",
@@ -98,17 +99,17 @@ export default {
         };
     },
     created() {
-        this.fetchReceipt();
+        this.fetchReceipt(); // Fetch the receipt when the component is created
     },
     computed: {
         formattedDate() {
             return this.receipt.date ? new Date(this.receipt.date).toLocaleDateString() : "";
         },
         subtotal() {
-            return this.receipt.products.reduce(
+            return this.receipt.products?.reduce(
                 (acc, product) => acc + product.price * product.quantity,
                 0
-            );
+            ) || 0;
         }
     },
     methods: {
@@ -116,18 +117,20 @@ export default {
             try {
                 const token = localStorage.getItem('token');
                 const response = await axios.get(
-                    `https://posinet.onrender.com/api/sales/${this.receiptId}`,
+                    `https://posinet.onrender.com/api/sales/${this.receiptId}`, // Make sure to use the correct URL path
                     {
                         headers: {
-                            Authorization: `Bearer ${token}`
+                            Authorization: `Bearer ${token}` // Use the stored token for authentication
                         }
                     }
                 );
-                this.receipt = response.data;
+                this.receipt = response.data; // Assign the fetched receipt data to the component's data
             } catch (error) {
                 console.error("Error fetching receipt:", error);
                 if (error.response && error.response.status === 401) {
                     this.error = "Unauthorized: Please log in to view this receipt.";
+                } else if (error.response && error.response.status === 404) {
+                    this.error = "Sale not found."; // Handle case where the sale is not found
                 } else {
                     this.error = "Error fetching receipt: " + error.message;
                 }
@@ -136,7 +139,7 @@ export default {
             }
         },
         formatCurrency(amount) {
-            return `Ksh ${amount.toLocaleString()}`;
+            return `Ksh ${amount.toLocaleString()}`; // Format currency in Ksh
         },
         printReceipt() {
             const printContent = document.getElementById('printableArea').innerHTML;
