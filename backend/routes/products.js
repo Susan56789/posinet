@@ -167,7 +167,7 @@ module.exports = function (client, app, authenticate) {
     // Get the latest products
     app.get('/api/products/latest', async (req, res) => {
         try {
-            const latestProducts = await products.find().sort({ createdAt: -1 }).limit(10).toArray();
+            const latestProducts = await products.find().sort({ createdAt: -1 }).limit(5).toArray();
             const processedProducts = latestProducts.map(product => ({
                 ...product,
                 salePrice: product.discountedPrice && product.discountedPrice > 0 ? product.discountedPrice : product.price
