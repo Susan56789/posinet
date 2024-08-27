@@ -80,8 +80,8 @@ const routes = [
                 meta: { breadcrumb: 'Sales', title: 'Sales', requiresAuth: true }
             },
             {
-                path: 'receipt',
-                name: 'Receipt',
+                path: '/receipt/:saleId',
+                name: 'ReceiptPage',
                 component: () => import('@/components/ReceiptPage.vue'),
                 meta: { breadcrumb: 'Receipt', title: 'Receipt', requiresAuth: true }
             },

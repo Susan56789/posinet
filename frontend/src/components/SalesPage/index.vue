@@ -7,15 +7,22 @@
                 <h2 class="text-xl font-semibold mb-2">Search Product</h2>
                 <input v-model="searchQuery" @input="searchProduct" placeholder="Search Product"
                     class="w-full p-2 border rounded" />
+
                 <!-- Dropdown for Search Results -->
                 <ul v-if="searchResults.length" class="absolute left-0 right-0 bg-white border rounded mt-2 z-10">
                     <li v-for="result in searchResults" :key="result._id" class="p-2 hover:bg-gray-200 cursor-pointer">
                         <div class="flex justify-between items-center">
-                            <div @click="addProductToSale(result)">
+                            <div @click="addProductToSale(result)" v-if="result.stock > 0">
                                 <p>{{ result.title }}</p>
                                 <p class="text-sm text-gray-600">{{ formatCurrency(result.price) }}</p>
+                                <p class="text-xs text-green-600">In Stock: {{ result.stock }}</p>
                             </div>
-                            <div class="flex items-center">
+                            <div v-else>
+                                <p>{{ result.title }}</p>
+                                <p class="text-sm text-gray-600">{{ formatCurrency(result.price) }}</p>
+                                <p class="text-xs text-red-600">Out of Stock</p>
+                            </div>
+                            <div v-if="result.stock > 0" class="flex items-center">
                                 <button @click.stop="decreaseQuantity(result)"
                                     class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
                                     :disabled="!result.selectedQuantity || result.selectedQuantity === 0">
@@ -40,8 +47,10 @@
                         <div>
                             <p>{{ product.title }}</p>
                             <p class="text-sm text-gray-600">{{ formatCurrency(product.price) }}</p>
+                            <p v-if="product.stock > 0" class="text-xs text-green-600">In Stock: {{ product.stock }}</p>
+                            <p v-else class="text-xs text-red-600">Out of Stock</p>
                         </div>
-                        <div class="flex items-center">
+                        <div v-if="product.stock > 0" class="flex items-center">
                             <button @click="decreaseQuantity(product)"
                                 class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
                                 :disabled="!product.selectedQuantity || product.selectedQuantity === 0">
@@ -190,8 +199,12 @@ export default {
             }
 
             try {
+                const token = localStorage.getItem('token');
                 const response = await axios.get(`https://posinet.onrender.com/api/products/search`, {
-                    params: { q: this.searchQuery }
+                    params: { q: this.searchQuery },
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
                 });
                 this.searchResults = response.data.map(product => ({
                     ...product,
@@ -204,36 +217,40 @@ export default {
             }
         },
         addProductToSale(product) {
-            const existingProduct = this.selectedProducts.find(p => p._id === product._id);
-            if (existingProduct) {
-                existingProduct.selectedQuantity += 1;
-            } else {
-                this.selectedProducts.push({
-                    ...product,
-                    selectedQuantity: 1,
-                    price: product.salePrice
-                });
+            if (product.stock > 0) {
+                const existingProduct = this.selectedProducts.find(p => p._id === product._id);
+                if (existingProduct) {
+                    existingProduct.selectedQuantity += 1;
+                } else {
+                    this.selectedProducts.push({
+                        ...product,
+                        selectedQuantity: 1,
+                        price: product.salePrice
+                    });
+                }
+                this.searchQuery = '';
+                this.searchResults = [];
+                this.calculateTotalAmount();
             }
-            this.searchQuery = '';
-            this.searchResults = [];
-            this.calculateTotalAmount();
         },
         increaseQuantity(product) {
-            const targetProduct = this.selectedProducts.find(p => p._id === product._id);
-            if (targetProduct) {
-                targetProduct.selectedQuantity++;
-            } else {
-                product.selectedQuantity++;
-                this.selectedProducts.push({ ...product });
+            if (product.stock > 0) {
+                const targetProduct = this.selectedProducts.find(p => p._id === product._id);
+                if (targetProduct) {
+                    targetProduct.selectedQuantity++;
+                } else {
+                    product.selectedQuantity++;
+                    this.selectedProducts.push({ ...product });
+                }
+                this.calculateTotalAmount();
             }
-            this.calculateTotalAmount();
         },
         decreaseQuantity(product) {
             const targetProduct = this.selectedProducts.find(p => p._id === product._id);
             if (targetProduct && targetProduct.selectedQuantity > 0) {
                 targetProduct.selectedQuantity--;
             }
-            if (targetProduct.selectedQuantity === 0) {
+            if (targetProduct && targetProduct.selectedQuantity === 0) {
                 this.selectedProducts = this.selectedProducts.filter(p => p._id !== product._id);
             }
             this.calculateTotalAmount();
@@ -249,35 +266,55 @@ export default {
             this.totalAmount = subtotal - applicableDiscount;
         },
         async sellProduct() {
-            if (!this.selectedProducts.length) {
-                this.error = 'Please select at least one product to sell.';
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                this.error = 'Authorization token is missing. Please log in again.';
                 return;
             }
-            if (!this.customerDetails.name || !this.customerDetails.phone || !this.customerDetails.email) {
-                this.error = 'Please fill in all customer details.';
+
+            if (this.selectedProducts.some(product => product.stock < product.selectedQuantity)) {
+                this.error = 'One or more products do not have enough stock';
                 return;
             }
-            const saleData = {
+
+            const sale = {
                 products: this.selectedProducts.map(product => ({
                     productId: product._id,
-                    quantity: product.selectedQuantity
+                    quantity: product.selectedQuantity,
+                    price: product.price,
                 })),
-                discount: Math.min(this.discount, 500), // Apply discount cap here as well
-                customer: this.customerDetails,
+                discount: this.discount,
+                customerDetails: this.customerDetails,
                 paymentMethod: this.paymentMethod,
-                totalAmount: this.totalAmount
+                totalAmount: this.totalAmount,
+                date: new Date().toISOString()
             };
 
             try {
-                const response = await axios.post('https://posinet.onrender.com/api/sales', saleData);
-                if (response.status === 201) {
-                    this.$router.push('/receipt', { query: { saleId: response.data._id } });
-                } else {
-                    this.error = 'An error occurred while processing the sale. Please try again.';
-                }
+                console.log('Sending sale data:', JSON.stringify(sale));
+
+                const saleResponse = await axios.post('https://posinet.onrender.com/api/sales', sale, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+
+                console.log('Sale response:', saleResponse.data);
+
+                // Clear form
+                this.selectedProducts = [];
+                this.discount = '';
+                this.customerDetails = { name: '', phone: '', email: '' };
+                this.totalAmount = 0;
+                this.error = '';
+
+                // Redirect to the receipt page
+                this.$router.push({ name: 'ReceiptPage', params: { saleId: saleResponse.data.saleId } });
+
             } catch (error) {
-                console.error('Error during sale submission:', error);
-                this.error = 'Error submitting sale: ' + error.message;
+                console.error('Error completing sale:', error);
+                this.error = 'Error completing sale: ' + (error.response?.data?.message || error.message);
             }
         }
     },
