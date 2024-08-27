@@ -1,4 +1,3 @@
-<!-- eslint-disable no-unused-vars -->
 <template>
     <div class="manage-products">
         <h1 class="text-2xl font-bold mb-4">Manage Products</h1>
@@ -15,6 +14,8 @@
                     class="border p-2 mb-2 w-full" />
                 <input v-model="productForm.category" placeholder="Category" required class="border p-2 mb-2 w-full" />
                 <input v-model="productForm.price" type="number" placeholder="Price" required
+                    class="border p-2 mb-2 w-full" />
+                <input v-model="productForm.discountedPrice" type="number" placeholder="Discounted Price"
                     class="border p-2 mb-2 w-full" />
                 <input v-model="productForm.stock" type="number" placeholder="Stock" required
                     class="border p-2 mb-2 w-full" />
@@ -33,8 +34,8 @@
                     </div>
                 </div>
 
-
-                <button type="submit" class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">
+                <button type="submit" :disabled="isSubmitting"
+                    class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">
                     {{ editMode ? 'Update' : 'Add' }} Product
                 </button>
                 <button type="button" @click="cancelForm"
@@ -77,7 +78,6 @@
         </table>
     </div>
 </template>
-
 <script>
 import axios from 'axios';
 
@@ -88,11 +88,13 @@ export default {
             products: [],
             showForm: false,
             editMode: false,
+            isSubmitting: false, // Add this state to track form submission
             productForm: {
                 title: '',
                 description: '',
                 category: '',
                 price: '',
+                discountedPrice: '', // Optional field
                 stock: '',
                 images: []
             },
@@ -146,12 +148,19 @@ export default {
         },
         async createProduct() {
             try {
+                if (this.isSubmitting) return; // Prevent double submission
+                this.isSubmitting = true; // Disable the form
+
                 const formData = new FormData();
                 formData.append('title', this.productForm.title);
                 formData.append('description', this.productForm.description);
                 formData.append('price', this.productForm.price);
                 formData.append('stock', this.productForm.stock);
                 formData.append('category', this.productForm.category);
+
+                if (this.productForm.discountedPrice) {
+                    formData.append('discountedPrice', this.productForm.discountedPrice); // Optional field
+                }
 
                 this.productForm.images.forEach((image) => {
                     formData.append('images', image); // Add each image file to FormData
@@ -177,6 +186,8 @@ export default {
             } catch (error) {
                 console.error('Error creating product:', error);
                 alert('Failed to add product. Error: ' + error.message);
+            } finally {
+                this.isSubmitting = false; // Re-enable the form
             }
         },
         editProduct(product) {
@@ -190,6 +201,9 @@ export default {
         },
         async updateProduct() {
             try {
+                if (this.isSubmitting) return; // Prevent double submission
+                this.isSubmitting = true; // Disable the form
+
                 const formData = new FormData();
                 formData.append('title', this.productForm.title);
                 formData.append('description', this.productForm.description);
@@ -197,56 +211,79 @@ export default {
                 formData.append('stock', this.productForm.stock);
                 formData.append('category', this.productForm.category);
 
+                if (this.productForm.discountedPrice) {
+                    formData.append('discountedPrice', this.productForm.discountedPrice); // Optional field
+                }
+
                 this.productForm.images.forEach((image) => {
-                    formData.append('images', image);
+                    formData.append('images', image); // Add each image file to FormData
                 });
 
                 const token = localStorage.getItem('token');
-                await axios.put(`https://posinet.onrender.com/api/product/${this.productForm._id}`, formData, {
+                if (!token) throw new Error('Authentication token is missing.');
+
+                const response = await axios.put(`https://posinet.onrender.com/api/products/${this.productForm._id}`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                this.fetchProducts();
-                this.cancelForm();
-                alert('Product updated successfully!');
+
+                if (response.status === 200) {
+                    alert('Product updated successfully!');
+                    this.fetchProducts();
+                    this.cancelForm();
+                } else {
+                    throw new Error('Failed to update product.');
+                }
             } catch (error) {
                 console.error('Error updating product:', error);
-                alert('Failed to update product. Please try again.');
+                alert('Failed to update product. Error: ' + error.message);
+            } finally {
+                this.isSubmitting = false; // Re-enable the form
             }
         },
         async deleteProduct(productId) {
             try {
                 const token = localStorage.getItem('token');
-                await axios.delete(`https://posinet.onrender.com/api/product/${productId}`, {
+                if (!token) throw new Error('Authentication token is missing.');
+
+                const response = await axios.delete(`https://posinet.onrender.com/api/products/${productId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                this.products = this.products.filter(product => product._id !== productId);
+
+                if (response.status === 200) {
+                    alert('Product deleted successfully!');
+                    this.fetchProducts();
+                } else {
+                    throw new Error('Failed to delete product.');
+                }
             } catch (error) {
                 console.error('Error deleting product:', error);
+                alert('Failed to delete product. Error: ' + error.message);
             }
+        },
+        cancelForm() {
+            this.showForm = false;
+            this.resetForm();
         },
         resetForm() {
             this.productForm = {
                 title: '',
                 description: '',
-                price: '',
                 category: '',
+                price: '',
+                discountedPrice: '', // Optional field
                 stock: '',
                 images: []
             };
             this.imagePreviews = [];
-        },
-        cancelForm() {
-            this.showForm = false;
-            this.resetForm();
         }
     },
     mounted() {
         this.fetchProducts();
     }
-}
+};
 </script>

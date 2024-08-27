@@ -29,7 +29,7 @@ module.exports = function (client, app, authenticate) {
     // Create product route
     app.post('/api/products', authenticate, upload.array('images', 10), async (req, res) => {
         try {
-            const { title, description, price, stock, category } = req.body;
+            const { title, description, price, stock, category, discountedPrice } = req.body;
 
             if (!title || !description || !price || !stock) {
                 return res.status(400).json({ message: 'All fields are required.' });
@@ -45,6 +45,7 @@ module.exports = function (client, app, authenticate) {
                 description,
                 category,
                 price: parseFloat(price),
+                discountedPrice: discountedPrice ? parseFloat(discountedPrice) : null,
                 stock: parseInt(stock, 10),
                 images, // Store images directly in the product document
                 createdAt: new Date()
@@ -73,28 +74,28 @@ module.exports = function (client, app, authenticate) {
             res.status(500).json({ message: 'Error fetching products', error });
         }
     });
-// Get product by ID
-app.get('/api/product/:id', async (req, res) => {
-    try {
-        const productId = req.params.id;
-        
-        // Ensure the id is a valid ObjectId
-        if (!ObjectId.isValid(productId)) {
-            return res.status(400).json({ message: 'Invalid product ID' });
+    // Get product by ID
+    app.get('/api/product/:id', async (req, res) => {
+        try {
+            const productId = req.params.id;
+
+            // Ensure the id is a valid ObjectId
+            if (!ObjectId.isValid(productId)) {
+                return res.status(400).json({ message: 'Invalid product ID' });
+            }
+
+            const product = await products.findOne({ _id: new ObjectId(productId) });
+
+            if (!product) {
+                return res.status(404).json({ message: 'Product not found' });
+            }
+
+            res.status(200).json(product);
+        } catch (error) {
+            console.error('Error fetching product by ID:', error);
+            res.status(500).json({ message: 'Error fetching product', error: error.message });
         }
-
-        const product = await products.findOne({ _id: new ObjectId(productId) });
-
-        if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
-        }
-
-        res.status(200).json(product);
-    } catch (error) {
-        console.error('Error fetching product by ID:', error);
-        res.status(500).json({ message: 'Error fetching product', error: error.message });
-    }
-});
+    });
     // Update product route
     app.put('/api/product/:id', authenticate, upload.array('images', 5), async (req, res) => {
         try {
@@ -104,6 +105,7 @@ app.get('/api/product/:id', async (req, res) => {
                 title: req.body.title,
                 category: req.body.category,
                 description: req.body.description,
+                discountedPrice: discountedPrice ? parseFloat(discountedPrice) : null,
                 price: parseFloat(req.body.price),
                 stock: parseInt(req.body.stock)
             };
