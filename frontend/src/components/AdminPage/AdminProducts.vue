@@ -111,12 +111,18 @@ export default {
         async fetchProducts() {
             try {
                 const response = await axios.get('https://posinet.onrender.com/api/products');
-                this.products = response.data.map(product => ({
+                const items = response.data.map(product => ({
                     ...product,
                     imageUrl: product.images && product.images.length > 0
                         ? `data:${product.images[0].contentType};base64,${product.images[0].data}`
                         : null
                 }));
+
+                // Sort the items by createdAt date in descending order (newest first)
+                items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                // Take only the first 10 items (latest 10)
+                this.products = items.slice(0, 10);
             } catch (error) {
                 console.error('Error fetching products:', error);
             }
