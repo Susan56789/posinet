@@ -53,14 +53,17 @@ module.exports = function (client, app, authenticate) {
 
             const result = await products.insertOne(newProduct);
 
-            if (result.insertedCount === 1) {
-                res.status(201).json({ message: 'Product created successfully', product: newProduct });
+            if (result.insertedId) {
+                res.status(201).json({
+                    message: 'Product created successfully',
+                    product: { ...newProduct, _id: result.insertedId }
+                });
             } else {
                 res.status(500).json({ message: 'Failed to create product' });
             }
         } catch (err) {
             console.error('Error creating product:', err);
-            res.status(500).json({ message: 'Internal Server Error' });
+            res.status(500).json({ message: 'Internal Server Error', error: err.message });
         }
     });
 

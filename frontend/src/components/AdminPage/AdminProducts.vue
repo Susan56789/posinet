@@ -178,16 +178,16 @@ export default {
                     }
                 });
 
-                if (response.status === 201) {
+                if (response.data && response.data.product) {
                     alert('Product added successfully!');
                     this.fetchProducts();
                     this.cancelForm();
                 } else {
-                    throw new Error('Failed to add product.');
+                    throw new Error(response.data.message || 'Failed to add product.');
                 }
             } catch (error) {
                 console.error('Error creating product:', error);
-                alert('Failed to add product. Error: ' + error.message);
+                alert('Failed to add product. Error: ' + (error.response?.data?.message || error.message));
             } finally {
                 this.isSubmitting = false;
             }
@@ -231,7 +231,7 @@ export default {
                     }
                 });
 
-                if (response.status === 200) {
+                if (response.data) {
                     alert('Product updated successfully!');
                     this.fetchProducts();
                     this.cancelForm();
@@ -240,9 +240,9 @@ export default {
                 }
             } catch (error) {
                 console.error('Error updating product:', error);
-                alert('Failed to update product. Error: ' + error.message);
+                alert('Failed to update product. Error: ' + (error.response?.data?.message || error.message));
             } finally {
-                this.isSubmitting = false; // Re-enable the form
+                this.isSubmitting = false;
             }
         },
         async deleteProduct(productId) {
