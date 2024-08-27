@@ -103,4 +103,100 @@ module.exports = function (client, app, authenticate) {
     });
 
 
+    // Update customer details
+    app.put('/api/customers/:id', authenticate, async (req, res) => {
+        const { id } = req.params;
+        const { name, phone, email, lastPurchaseDate, totalPurchases } = req.body;
+
+        try {
+            const result = await customers.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { name, phone, email, lastPurchaseDate, totalPurchases } }
+            );
+
+            if (result.matchedCount > 0) {
+                await logActivity('customer_update', `Customer ${id} updated`);
+                res.status(200).json({ message: 'Customer updated successfully' });
+            } else {
+                res.status(404).json({ message: 'Customer not found' });
+            }
+        } catch (error) {
+            console.error('Error updating customer:', error);
+            res.status(500).json({ message: 'Error updating customer', error: error.message });
+        }
+    });
+
+    // Delete a customer
+    app.delete('/api/customers/:id', authenticate, async (req, res) => {
+        const { id } = req.params;
+
+        try {
+            const result = await customers.deleteOne({ _id: new ObjectId(id) });
+
+            if (result.deletedCount > 0) {
+                await logActivity('customer_delete', `Customer ${id} deleted`);
+                res.status(200).json({ message: 'Customer deleted successfully' });
+            } else {
+                res.status(404).json({ message: 'Customer not found' });
+            }
+        } catch (error) {
+            console.error('Error deleting customer:', error);
+            res.status(500).json({ message: 'Error deleting customer', error: error.message });
+        }
+    });
+
+    // Search customers
+    app.get('/api/customers/search', authenticate, async (req, res) => {
+        const { query } = req.query;
+
+        try {
+            const searchResults = await customers.find({
+                $or: [
+                    { name: { $regex: query, $options: 'i' } },
+                    { email: { $regex: query, $options: 'i' } },
+                    { phone: { $regex: query, $options: 'i' } }
+                ]
+            }).toArray();
+
+            res.status(200).json(searchResults);
+        } catch (error) {
+            console.error('Error searching customers:', error);
+            res.status(500).json({ message: 'Error searching customers', error: error.message });
+        }
+    });
+
+    // Get customer purchase history
+    app.get('/api/customers/:id/purchases', authenticate, async (req, res) => {
+        const { id } = req.params;
+
+        try {
+            const purchases = await database.collection("sales").find({
+                customerId: new ObjectId(id)
+            }).toArray();
+
+            res.status(200).json(purchases);
+        } catch (error) {
+            console.error('Error fetching customer purchases:', error);
+            res.status(500).json({ message: 'Error fetching customer purchases', error: error.message });
+        }
+    });
+
+    // Get top customers
+    app.get('/api/customers/top', authenticate, async (req, res) => {
+        const { limit = 10 } = req.query;
+
+        try {
+            const topCustomers = await customers.find()
+                .sort({ totalPurchases: -1 })
+                .limit(parseInt(limit))
+                .toArray();
+
+            res.status(200).json(topCustomers);
+        } catch (error) {
+            console.error('Error fetching top customers:', error);
+            res.status(500).json({ message: 'Error fetching top customers', error: error.message });
+        }
+    });
+
+
 };

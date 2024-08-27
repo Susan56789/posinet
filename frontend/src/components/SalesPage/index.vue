@@ -156,6 +156,8 @@
 <script>
 import axios from 'axios';
 
+import { useStore } from 'vuex';
+
 export default {
     name: "SalesPage",
     data() {
@@ -174,6 +176,12 @@ export default {
             latestProducts: [],
             totalAmount: 0
         };
+    },
+    computed: {
+        userName() {
+            const store = useStore();
+            return store.getters.getUserName;
+        }
     },
     created() {
         this.fetchLatestProducts();
@@ -201,19 +209,21 @@ export default {
             try {
                 const token = localStorage.getItem('token');
                 const response = await axios.get(`https://posinet.onrender.com/api/products/search`, {
-                    params: { q: this.searchQuery },
+                    params: {
+                        query: this.searchQuery
+                    },
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
                 });
                 this.searchResults = response.data.map(product => ({
                     ...product,
-                    selectedQuantity: product.selectedQuantity || 0,
-                    price: product.discountedPrice && product.discountedPrice > 0 ? product.discountedPrice : product.price
+                    selectedQuantity: 0,
+                    price: product.salePrice
                 }));
             } catch (error) {
-                console.error('Error searching for products:', error);
-                this.error = 'Error searching for products: ' + error.message;
+                console.error('Error searching products:', error);
+                this.error = 'Error searching products: ' + error.message;
             }
         },
         addProductToSale(product) {
@@ -255,15 +265,22 @@ export default {
             }
             this.calculateTotalAmount();
         },
-        formatCurrency(amount) {
-            return `Ksh ${amount.toLocaleString()}`;
+        formatCurrency(value) {
+            const numericValue = parseFloat(value);
+            return isNaN(numericValue) ? '-' : numericValue.toLocaleString('en-KE', { style: 'currency', currency: 'KES' });
         },
         calculateTotalAmount() {
-            const subtotal = this.selectedProducts.reduce(
-                (acc, product) => acc + product.price * product.selectedQuantity, 0
-            );
-            const applicableDiscount = Math.min(this.discount, 500); // Maximum discount cap of 500
-            this.totalAmount = subtotal - applicableDiscount;
+            let subtotal = 0;
+
+            this.selectedProducts.forEach(product => {
+                subtotal += product.selectedQuantity * product.price;
+            });
+
+            // Apply discount (capped at 500)
+            const discountAmount = Math.min(this.discount, 500);
+            subtotal -= discountAmount;
+
+            this.totalAmount = subtotal;
         },
         async sellProduct() {
             const token = localStorage.getItem('token');
@@ -288,7 +305,8 @@ export default {
                 customerDetails: this.customerDetails,
                 paymentMethod: this.paymentMethod,
                 totalAmount: this.totalAmount,
-                date: new Date().toISOString()
+                date: new Date().toISOString(),
+                servedBy: this.userName  // Add the userName here
             };
 
             try {
@@ -325,6 +343,8 @@ export default {
     }
 };
 </script>
+
+
 
 <style scoped>
 /* Add your styles here */

@@ -60,6 +60,18 @@ const routes = [
                         meta: { breadcrumb: 'Products', title: 'Manage Products' }
                     },
                     {
+                        path: '/admin/sales',
+                        name: 'SalesManagement',
+                        component: () => import('@/components/AdminPage/SalesManagement.vue'),
+                        meta: { breadcrumb: 'Sales Management', title: 'Sales Management' }
+                    },
+                    {
+                        path: '/admin/customers',
+                        name: 'CustomerManagement',
+                        component: () => import('@/components/AdminPage/CustomerManagement.vue'),
+                        meta: { breadcrumb: 'Customer Management', title: 'Customer Management' }
+                    },
+                    {
                         path: 'permissions',
                         name: 'AdminPermissions',
                         component: () => import('@/components/AdminPage/AdminPermissions.vue'),

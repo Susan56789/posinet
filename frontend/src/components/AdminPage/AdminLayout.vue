@@ -53,7 +53,8 @@ export default {
             { name: 'Dashboard', path: '/admin' },
             { name: 'Manage Users', path: '/admin/users' },
             { name: 'Manage Products', path: '/admin/products' },
-            { name: 'Manage Permissions', path: '/admin/permissions' },
+            { name: 'Manage Sales', path: '/admin/sales' },
+            { name: 'Manage Customers', path: '/admin/customers' },
             { name: 'View Reports', path: '/admin/reports' },
         ];
 

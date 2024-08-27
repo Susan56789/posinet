@@ -20,18 +20,18 @@ module.exports = (client, app, authenticate) => {
     };
 
 
-    //create new sale
+    // Create new sale
     app.post('/api/sales', authenticate, async (req, res) => {
         const session = await client.startSession();
         session.startTransaction();
 
         try {
-            const { products, discount, customerDetails, paymentMethod, totalAmount, date } = req.body;
+            const { products, discount, customerDetails, paymentMethod, totalAmount, date, servedBy } = req.body;
 
             console.log('Received sale data:', req.body);
 
             // Validate required fields
-            if (!products || !customerDetails || !paymentMethod || !totalAmount || !date) {
+            if (!products || !customerDetails || !paymentMethod || !totalAmount || !date || !servedBy) {
                 throw new Error('All fields are required');
             }
 
@@ -46,7 +46,8 @@ module.exports = (client, app, authenticate) => {
                 customerDetails,
                 paymentMethod,
                 totalAmount,
-                date: new Date(date)
+                date: new Date(date),
+                servedBy // Store the information about who served the customer
             };
 
             const saleResult = await sales.insertOne(sale, { session });
@@ -205,6 +206,125 @@ module.exports = (client, app, authenticate) => {
         } catch (error) {
             console.error('Error deleting sale:', error);
             res.status(500).json({ message: 'Error deleting sale', error: error.message });
+        }
+    });
+
+    // Get a specific sale by ID
+    app.get('/api/sales/:id', authenticate, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const sale = await sales.findOne({ _id: id });
+
+            if (!sale) {
+                return res.status(404).json({ message: 'Sale not found' });
+            }
+
+            res.status(200).json(sale);
+        } catch (error) {
+            console.error('Error fetching sale:', error);
+            res.status(500).json({ message: 'Error fetching sale', error: error.message });
+        }
+    });
+
+    // Search sales
+    app.get('/api/sales/search', authenticate, async (req, res) => {
+        try {
+            const { query } = req.query;
+            const searchResults = await sales.find({
+                $or: [
+                    { 'customerDetails.name': { $regex: query, $options: 'i' } },
+                    { 'customerDetails.email': { $regex: query, $options: 'i' } },
+                    { 'customerDetails.phone': { $regex: query, $options: 'i' } },
+                    { _id: { $regex: query, $options: 'i' } }
+                ]
+            }).toArray();
+
+            res.status(200).json(searchResults);
+        } catch (error) {
+            console.error('Error searching sales:', error);
+            res.status(500).json({ message: 'Error searching sales', error: error.message });
+        }
+    });
+
+    // Get sales by date range
+    app.get('/api/sales/bydate', authenticate, async (req, res) => {
+        try {
+            const { startDate, endDate } = req.query;
+            const salesInRange = await sales.find({
+                date: {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate)
+                }
+            }).toArray();
+
+            res.status(200).json(salesInRange);
+        } catch (error) {
+            console.error('Error fetching sales by date range:', error);
+            res.status(500).json({ message: 'Error fetching sales by date range', error: error.message });
+        }
+    });
+
+    // Get top selling products
+    app.get('/api/sales/topproducts', authenticate, async (req, res) => {
+        try {
+            const topProducts = await sales.aggregate([
+                { $unwind: '$products' },
+                {
+                    $group: {
+                        _id: '$products.productId',
+                        totalQuantity: { $sum: '$products.quantity' },
+                        totalRevenue: { $sum: { $multiply: ['$products.price', '$products.quantity'] } }
+                    }
+                },
+                { $sort: { totalQuantity: -1 } },
+                { $limit: 10 }
+            ]).toArray();
+
+            res.status(200).json(topProducts);
+        } catch (error) {
+            console.error('Error fetching top selling products:', error);
+            res.status(500).json({ message: 'Error fetching top selling products', error: error.message });
+        }
+    });
+
+    // Get a specific sale by ID (Receipt endpoint)
+    app.get('/api/sales/:id', authenticate, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const sale = await sales.findOne({ _id: id });
+
+            if (!sale) {
+                return res.status(404).json({ message: 'Sale not found' });
+            }
+
+            res.status(200).json(sale);
+        } catch (error) {
+            console.error('Error fetching sale:', error);
+            res.status(500).json({ message: 'Error fetching sale', error: error.message });
+        }
+    });
+
+
+    // Get sales summary
+    app.get('/api/sales/summary', authenticate, async (req, res) => {
+        try {
+            const summary = await sales.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        totalSales: { $sum: 1 },
+                        totalRevenue: { $sum: '$totalAmount' },
+                        averageSaleAmount: { $avg: '$totalAmount' },
+                        minSaleAmount: { $min: '$totalAmount' },
+                        maxSaleAmount: { $max: '$totalAmount' }
+                    }
+                }
+            ]).toArray();
+
+            res.status(200).json(summary[0] || {});
+        } catch (error) {
+            console.error('Error fetching sales summary:', error);
+            res.status(500).json({ message: 'Error fetching sales summary', error: error.message });
         }
     });
 };
