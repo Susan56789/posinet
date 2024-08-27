@@ -103,14 +103,15 @@ module.exports = function (client, app, authenticate) {
     app.put('/api/product/:id', authenticate, upload.array('images', 5), async (req, res) => {
         try {
             const { id } = req.params;
+            const { title, category, description, price, stock, discountedPrice } = req.body;
 
             const productData = {
-                title: req.body.title,
-                category: req.body.category,
-                description: req.body.description,
-                discountedPrice: discountedPrice ? parseFloat(discountedPrice) : 0,
-                price: parseFloat(req.body.price),
-                stock: parseInt(req.body.stock)
+                title,
+                category,
+                description,
+                price: parseFloat(price),
+                stock: parseInt(stock),
+                discountedPrice: discountedPrice ? parseFloat(discountedPrice) : null
             };
 
             if (!productData.title || !productData.description || isNaN(productData.price) || isNaN(productData.stock)) {

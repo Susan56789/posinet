@@ -213,6 +213,7 @@ export default {
                 formData.append('stock', this.productForm.stock);
                 formData.append('category', this.productForm.category);
 
+                // Add discountedPrice to FormData
                 if (this.productForm.discountedPrice) {
                     formData.append('discountedPrice', this.productForm.discountedPrice);
                 }
