@@ -157,9 +157,18 @@
 import axios from 'axios';
 
 import { useStore } from 'vuex';
+import { computed } from 'vue';
 
 export default {
     name: "SalesPage",
+    setup() {
+        const store = useStore();
+        const userName = computed(() => store.getters.getUserName);
+
+        return {
+            userName
+        };
+    },
     data() {
         return {
             searchQuery: '',
@@ -176,12 +185,6 @@ export default {
             latestProducts: [],
             totalAmount: 0
         };
-    },
-    computed: {
-        userName() {
-            const store = useStore();
-            return store.getters.getUserName;
-        }
     },
     created() {
         this.fetchLatestProducts();
@@ -281,36 +284,52 @@ export default {
             subtotal -= discountAmount;
 
             this.totalAmount = subtotal;
+
         },
         async sellProduct() {
-            const token = localStorage.getItem('token');
-
-            if (!token) {
-                this.error = 'Authorization token is missing. Please log in again.';
-                return;
-            }
-
-            if (this.selectedProducts.some(product => product.stock < product.selectedQuantity)) {
-                this.error = 'One or more products do not have enough stock';
-                return;
-            }
-
-            const sale = {
-                products: this.selectedProducts.map(product => ({
-                    productId: product._id,
-                    quantity: product.selectedQuantity,
-                    price: product.price,
-                })),
-                discount: this.discount,
-                customerDetails: this.customerDetails,
-                paymentMethod: this.paymentMethod,
-                totalAmount: this.totalAmount,
-                date: new Date().toISOString(),
-                servedBy: this.userName  // Add the userName here
-            };
-
             try {
-                console.log('Sending sale data:', JSON.stringify(sale));
+                // Validation
+                if (this.selectedProducts.length === 0) {
+                    throw new Error("Please select at least one product");
+                }
+                if (!this.customerDetails.name.trim() || !this.customerDetails.phone.trim()) {
+                    throw new Error("Customer name and phone are required");
+                }
+                if (!this.paymentMethod) {
+                    throw new Error("Please select a payment method");
+                }
+                if (this.totalAmount <= 0) {
+                    throw new Error("Total amount must be greater than zero");
+                }
+                if (!this.userName) {
+                    throw new Error("Server name is required");
+                }
+
+                const sale = {
+                    products: this.selectedProducts.map(product => ({
+                        productId: product._id,
+                        quantity: product.selectedQuantity,
+                        price: product.price,
+                    })),
+                    discount: this.discount || 0,
+                    customerDetails: {
+                        name: this.customerDetails.name.trim(),
+                        phone: this.customerDetails.phone.trim(),
+                        email: this.customerDetails.email.trim() || null,
+                    },
+                    paymentMethod: this.paymentMethod,
+                    totalAmount: this.totalAmount,
+                    date: new Date().toISOString(),
+                    servedBy: this.userName,
+
+                };
+
+                console.log('Sending sale data:', JSON.stringify(sale, null, 2));
+
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('Authorization token is missing. Please log in again.');
+                }
 
                 const saleResponse = await axios.post('https://posinet.onrender.com/api/sales', sale, {
                     headers: {
@@ -320,20 +339,23 @@ export default {
 
                 console.log('Sale response:', saleResponse.data);
 
-                // Clear form
-                this.selectedProducts = [];
-                this.discount = '';
-                this.customerDetails = { name: '', phone: '', email: '' };
-                this.totalAmount = 0;
-                this.error = '';
-
-                // Redirect to the receipt page
+                // Clear form and redirect to receipt page
+                this.clearForm();
                 this.$router.push({ name: 'ReceiptPage', params: { saleId: saleResponse.data.saleId } });
 
             } catch (error) {
                 console.error('Error completing sale:', error);
-                this.error = 'Error completing sale: ' + (error.response?.data?.message || error.message);
+                this.error = error.response?.data?.message || error.message;
             }
+        },
+
+        clearForm() {
+            this.selectedProducts = [];
+            this.discount = 0;
+            this.customerDetails = { name: '', phone: '', email: '' };
+            this.paymentMethod = 'cash';
+            this.totalAmount = 0;
+            this.error = '';
         }
     },
     watch: {

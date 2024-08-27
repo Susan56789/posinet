@@ -31,7 +31,7 @@ module.exports = (client, app, authenticate) => {
             console.log('Received sale data:', req.body);
 
             // Validate required fields
-            if (!products || !customerDetails || !paymentMethod || !totalAmount || !date || !servedBy) {
+            if (!products || !customerDetails || !paymentMethod || !totalAmount || !date) {
                 throw new Error('All fields are required');
             }
 
@@ -47,7 +47,7 @@ module.exports = (client, app, authenticate) => {
                 paymentMethod,
                 totalAmount,
                 date: new Date(date),
-                servedBy // Store the information about who served the customer
+                servedBy
             };
 
             const saleResult = await sales.insertOne(sale, { session });
