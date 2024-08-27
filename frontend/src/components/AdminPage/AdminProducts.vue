@@ -5,6 +5,10 @@
             Add Product
         </button>
 
+        <!-- Search Input -->
+        <input v-model="searchQuery" @input="applyFilters" placeholder="Search products..."
+            class="border p-2 mb-4 w-full" />
+
         <!-- Add/Edit Product Form -->
         <div v-if="showForm" class="mb-4">
             <h2 class="text-xl font-bold mb-2">{{ editMode ? 'Edit' : 'Add' }} Product</h2>
@@ -57,7 +61,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="product in products" :key="product._id" class="border-b">
+                <tr v-for="product in paginatedProducts" :key="product._id" class="border-b">
                     <td class="py-2 px-4">
                         <img v-if="product.imageUrl" :src="product.imageUrl" alt="product image"
                             class="w-16 h-16 object-cover" />
@@ -78,6 +82,19 @@
                 </tr>
             </tbody>
         </table>
+
+        <!-- Pagination -->
+        <div class="mt-4 flex justify-center">
+            <button @click="prevPage" :disabled="currentPage === 1"
+                class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">
+                Previous
+            </button>
+            <span class="mx-2 py-2">Page {{ currentPage }} of {{ totalPages }}</span>
+            <button @click="nextPage" :disabled="currentPage === totalPages"
+                class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">
+                Next
+            </button>
+        </div>
     </div>
 </template>
 <script>
@@ -88,6 +105,8 @@ export default {
     data() {
         return {
             products: [],
+            filteredProducts: [],
+            paginatedProducts: [],
             showForm: false,
             editMode: false,
             isSubmitting: false,
@@ -100,8 +119,16 @@ export default {
                 stock: '',
                 images: []
             },
-            imagePreviews: []
+            imagePreviews: [],
+            searchQuery: '',
+            currentPage: 1,
+            itemsPerPage: 20
         };
+    },
+    computed: {
+        totalPages() {
+            return Math.ceil(this.filteredProducts.length / this.itemsPerPage);
+        }
     },
     methods: {
         formatCurrency(value) {
@@ -118,13 +145,42 @@ export default {
                         : null
                 }));
 
-                // Sort the items by createdAt date in descending order (newest first)
-                items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-                // Take only the first 10 items (latest 10)
-                this.products = items.slice(0, 10);
+                this.products = items;
+                this.applyFilters();  // Apply search and pagination after fetching
             } catch (error) {
                 console.error('Error fetching products:', error);
+            }
+        },
+        applyFilters() {
+            // Filter products based on search query
+            if (this.searchQuery.trim()) {
+                this.filteredProducts = this.products.filter(product =>
+                    product.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    product.description.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    product.category.toLowerCase().includes(this.searchQuery.toLowerCase())
+                );
+            } else {
+                this.filteredProducts = this.products;
+            }
+
+            this.currentPage = 1; // Reset to the first page after filtering
+            this.paginateProducts();
+        },
+        paginateProducts() {
+            const start = (this.currentPage - 1) * this.itemsPerPage;
+            const end = start + this.itemsPerPage;
+            this.paginatedProducts = this.filteredProducts.slice(start, end);
+        },
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+                this.paginateProducts();
+            }
+        },
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                this.paginateProducts();
             }
         },
         showAddProductForm() {
@@ -138,74 +194,44 @@ export default {
             this.imagePreviews = [];
 
             Array.from(files).forEach((file) => {
-                // Push the actual file to the images array
                 this.productForm.images.push(file);
 
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    // Push the base64 image preview to the previews array
                     this.imagePreviews.push(e.target.result);
                 };
                 reader.readAsDataURL(file);
             });
         },
-
         removeImage(index) {
             this.productForm.images.splice(index, 1);
             this.imagePreviews.splice(index, 1);
         },
         async createProduct() {
             try {
-                if (this.isSubmitting) return; // Prevent double submission
-                this.isSubmitting = true; // Disable the form
+                if (this.isSubmitting) return;
+                this.isSubmitting = true;
 
                 const formData = new FormData();
-                formData.append('title', this.productForm.title);
-                formData.append('description', this.productForm.description);
-                formData.append('price', this.productForm.price);
-                formData.append('stock', this.productForm.stock);
-                formData.append('category', this.productForm.category);
-
-                if (this.productForm.discountedPrice) {
-                    formData.append('discountedPrice', this.productForm.discountedPrice); // Optional field
-                }
-
-                this.productForm.images.forEach((image) => {
-                    formData.append('images', image); // Add each image file to FormData
-                });
-
-                const token = localStorage.getItem('token');
-                if (!token) throw new Error('Authentication token is missing.');
-
-                const response = await axios.post('https://posinet.onrender.com/api/products', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                        'Authorization': `Bearer ${token}`
+                Object.keys(this.productForm).forEach((key) => {
+                    if (key === 'images') {
+                        this.productForm.images.forEach((image, index) => {
+                            formData.append(`images[${index}]`, image);
+                        });
+                    } else {
+                        formData.append(key, this.productForm[key]);
                     }
                 });
 
-                if (response.data && response.data.product) {
-                    alert('Product added successfully!');
-                    this.fetchProducts();
-                    this.cancelForm();
-                } else {
-                    throw new Error(response.data.message || 'Failed to add product.');
-                }
+                await axios.post('https://posinet.onrender.com/api/products', formData);
+                this.resetForm();
+                this.showForm = false;
+                this.fetchProducts();
             } catch (error) {
                 console.error('Error creating product:', error);
-                alert('Failed to add product. Error: ' + (error.response?.data?.message || error.message));
             } finally {
                 this.isSubmitting = false;
             }
-        },
-        editProduct(product) {
-            this.showForm = true;
-            this.editMode = true;
-            this.productForm = {
-                ...product,
-                images: []
-            };
-            this.imagePreviews = product.imageUrl ? [product.imageUrl] : [];
         },
         async updateProduct() {
             try {
@@ -213,66 +239,39 @@ export default {
                 this.isSubmitting = true;
 
                 const formData = new FormData();
-                formData.append('title', this.productForm.title);
-                formData.append('description', this.productForm.description);
-                formData.append('price', this.productForm.price);
-                formData.append('stock', this.productForm.stock);
-                formData.append('category', this.productForm.category);
-
-                // Add discountedPrice to FormData
-                if (this.productForm.discountedPrice) {
-                    formData.append('discountedPrice', this.productForm.discountedPrice);
-                }
-
-                this.productForm.images.forEach((image) => {
-                    formData.append('images', image);
-                });
-
-                const token = localStorage.getItem('token');
-                if (!token) throw new Error('Authentication token is missing.');
-
-                const response = await axios.put(`https://posinet.onrender.com/api/product/${this.productForm._id}`, formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                        'Authorization': `Bearer ${token}`
+                Object.keys(this.productForm).forEach((key) => {
+                    if (key === 'images') {
+                        this.productForm.images.forEach((image, index) => {
+                            formData.append(`images[${index}]`, image);
+                        });
+                    } else {
+                        formData.append(key, this.productForm[key]);
                     }
                 });
 
-                if (response.data) {
-                    alert('Product updated successfully!');
-                    this.fetchProducts();
-                    this.cancelForm();
-                } else {
-                    throw new Error('Failed to update product.');
-                }
+                await axios.put(`https://posinet.onrender.com/api/product/${this.productForm._id}`, formData);
+                this.resetForm();
+                this.showForm = false;
+                this.fetchProducts();
             } catch (error) {
                 console.error('Error updating product:', error);
-                alert('Failed to update product. Error: ' + (error.response?.data?.message || error.message));
             } finally {
                 this.isSubmitting = false;
             }
         },
         async deleteProduct(productId) {
             try {
-                const token = localStorage.getItem('token');
-                if (!token) throw new Error('Authentication token is missing.');
-
-                const response = await axios.delete(`https://posinet.onrender.com/api/product/${productId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (response.status === 200) {
-                    alert('Product deleted successfully!');
-                    this.fetchProducts();
-                } else {
-                    throw new Error('Failed to delete product.');
-                }
+                await axios.delete(`https://posinet.onrender.com/api/product/${productId}`);
+                this.fetchProducts();
             } catch (error) {
                 console.error('Error deleting product:', error);
-                alert('Failed to delete product. Error: ' + error.message);
             }
+        },
+        editProduct(product) {
+            this.productForm = { ...product, images: [] };  // Images need special handling
+            this.imagePreviews = product.images.map(img => `data:${img.contentType};base64,${img.data}`);
+            this.showForm = true;
+            this.editMode = true;
         },
         cancelForm() {
             this.showForm = false;
@@ -289,6 +288,7 @@ export default {
                 images: []
             };
             this.imagePreviews = [];
+            this.isSubmitting = false;
         }
     },
     mounted() {
