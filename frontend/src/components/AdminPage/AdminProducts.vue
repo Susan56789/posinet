@@ -50,6 +50,7 @@
                     <th class="py-2 px-4">Images</th>
                     <th class="py-2 px-4">Title</th>
                     <th class="py-2 px-4">Price</th>
+                    <th class="py-2 px-4">Discounted Price</th>
                     <th class="py-2 px-4">Stock</th>
                     <th class="py-2 px-4">Category</th>
                     <th class="py-2 px-4">Actions</th>
@@ -65,6 +66,7 @@
                     <td class="py-2 px-4">{{ product.title }}</td>
 
                     <td class="py-2 px-4">{{ formatCurrency(product.price) }}</td>
+                    <td class="py-2 px-4">{{ formatCurrency(product.discountedPrice) }}</td>
                     <td class="py-2 px-4">{{ product.stock }}</td>
                     <td class="py-2 px-4">{{ product.category }}</td>
                     <td class="py-2 px-4">
