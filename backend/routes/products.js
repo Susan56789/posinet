@@ -105,7 +105,7 @@ module.exports = function (client, app, authenticate) {
                 title: req.body.title,
                 category: req.body.category,
                 description: req.body.description,
-                discountedPrice: discountedPrice ? parseFloat(discountedPrice) : null,
+                discountedPrice: discountedPrice ? parseFloat(discountedPrice) : 0,
                 price: parseFloat(req.body.price),
                 stock: parseInt(req.body.stock)
             };

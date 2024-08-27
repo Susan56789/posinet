@@ -90,13 +90,13 @@ export default {
             products: [],
             showForm: false,
             editMode: false,
-            isSubmitting: false, // Add this state to track form submission
+            isSubmitting: false,
             productForm: {
                 title: '',
                 description: '',
                 category: '',
                 price: '',
-                discountedPrice: '', // Optional field
+                discountedPrice: '',
                 stock: '',
                 images: []
             },
@@ -189,7 +189,7 @@ export default {
                 console.error('Error creating product:', error);
                 alert('Failed to add product. Error: ' + error.message);
             } finally {
-                this.isSubmitting = false; // Re-enable the form
+                this.isSubmitting = false;
             }
         },
         editProduct(product) {
@@ -197,14 +197,14 @@ export default {
             this.editMode = true;
             this.productForm = {
                 ...product,
-                images: [] // Reset images array for new uploads
+                images: []
             };
             this.imagePreviews = product.imageUrl ? [product.imageUrl] : [];
         },
         async updateProduct() {
             try {
-                if (this.isSubmitting) return; // Prevent double submission
-                this.isSubmitting = true; // Disable the form
+                if (this.isSubmitting) return;
+                this.isSubmitting = true;
 
                 const formData = new FormData();
                 formData.append('title', this.productForm.title);
@@ -214,17 +214,17 @@ export default {
                 formData.append('category', this.productForm.category);
 
                 if (this.productForm.discountedPrice) {
-                    formData.append('discountedPrice', this.productForm.discountedPrice); // Optional field
+                    formData.append('discountedPrice', this.productForm.discountedPrice);
                 }
 
                 this.productForm.images.forEach((image) => {
-                    formData.append('images', image); // Add each image file to FormData
+                    formData.append('images', image);
                 });
 
                 const token = localStorage.getItem('token');
                 if (!token) throw new Error('Authentication token is missing.');
 
-                const response = await axios.put(`https://posinet.onrender.com/api/products/${this.productForm._id}`, formData, {
+                const response = await axios.put(`https://posinet.onrender.com/api/product/${this.productForm._id}`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                         'Authorization': `Bearer ${token}`
@@ -250,7 +250,7 @@ export default {
                 const token = localStorage.getItem('token');
                 if (!token) throw new Error('Authentication token is missing.');
 
-                const response = await axios.delete(`https://posinet.onrender.com/api/products/${productId}`, {
+                const response = await axios.delete(`https://posinet.onrender.com/api/product/${productId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -277,7 +277,7 @@ export default {
                 description: '',
                 category: '',
                 price: '',
-                discountedPrice: '', // Optional field
+                discountedPrice: '',
                 stock: '',
                 images: []
             };
