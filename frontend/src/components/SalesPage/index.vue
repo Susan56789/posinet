@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-col md:flex-row h-screen">
+    <div class="flex flex-col md:flex-row">
         <!-- Left Sidebar: Latest Products and Search Bar -->
         <div class="w-full md:w-1/3 p-4 md:p-6 bg-gray-100 border-b md:border-b-0 md:border-r">
             <!-- Search Bar -->
@@ -97,9 +97,11 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-gray-700 mb-2">Coupon Code</label>
-                        <input v-model="coupon" placeholder="Coupon Code" class="w-full p-3 border rounded" />
+                        <label class="block text-gray-700 mb-2">Discount</label>
+                        <input v-model.number="discount" placeholder="Discount Amount (Max 500)"
+                            class="w-full p-3 border rounded" type="number" min="0" :max="500" />
                     </div>
+
                     <div class="mb-4">
                         <label class="block text-gray-700 mb-2">Customer Name</label>
                         <input v-model="customerDetails.name" placeholder="Customer Name"
@@ -152,7 +154,7 @@ export default {
             searchQuery: '',
             searchResults: [],
             selectedProducts: [],
-            coupon: '',
+            discount: 0,
             customerDetails: {
                 name: '',
                 phone: '',
@@ -219,105 +221,74 @@ export default {
         increaseQuantity(product) {
             const targetProduct = this.selectedProducts.find(p => p._id === product._id);
             if (targetProduct) {
-                targetProduct.selectedQuantity += 1;
+                targetProduct.selectedQuantity++;
             } else {
-                product.selectedQuantity += 1;
-                this.selectedProducts.push(product);
+                product.selectedQuantity++;
+                this.selectedProducts.push({ ...product });
             }
             this.calculateTotalAmount();
         },
         decreaseQuantity(product) {
             const targetProduct = this.selectedProducts.find(p => p._id === product._id);
-            if (targetProduct) {
-                targetProduct.selectedQuantity -= 1;
-                if (targetProduct.selectedQuantity <= 0) {
-                    this.selectedProducts = this.selectedProducts.filter(p => p._id !== product._id);
-                }
-            } else {
-                if (product.selectedQuantity > 0) {
-                    product.selectedQuantity -= 1;
-                }
+            if (targetProduct && targetProduct.selectedQuantity > 0) {
+                targetProduct.selectedQuantity--;
+            }
+            if (targetProduct.selectedQuantity === 0) {
+                this.selectedProducts = this.selectedProducts.filter(p => p._id !== product._id);
             }
             this.calculateTotalAmount();
         },
+        formatCurrency(amount) {
+            return `Ksh ${amount.toLocaleString()}`;
+        },
         calculateTotalAmount() {
-            this.totalAmount = this.selectedProducts.reduce((sum, product) => sum + product.selectedQuantity * product.price, 0);
+            const subtotal = this.selectedProducts.reduce(
+                (acc, product) => acc + product.price * product.selectedQuantity, 0
+            );
+            const applicableDiscount = Math.min(this.discount, 500); // Maximum discount cap of 500
+            this.totalAmount = subtotal - applicableDiscount;
         },
         async sellProduct() {
-            const token = localStorage.getItem('token');
-            if (this.selectedProducts.some(product => product.stock < product.selectedQuantity)) {
-                this.error = 'One or more products do not have enough stock';
+            if (!this.selectedProducts.length) {
+                this.error = 'Please select at least one product to sell.';
                 return;
             }
-            const sale = {
+            if (!this.customerDetails.name || !this.customerDetails.phone || !this.customerDetails.email) {
+                this.error = 'Please fill in all customer details.';
+                return;
+            }
+            const saleData = {
                 products: this.selectedProducts.map(product => ({
                     productId: product._id,
-                    quantity: product.selectedQuantity,
-                    price: product.price,
+                    quantity: product.selectedQuantity
                 })),
-                coupon: this.coupon,
-                customerDetails: this.customerDetails,
+                discount: Math.min(this.discount, 500), // Apply discount cap here as well
+                customer: this.customerDetails,
                 paymentMethod: this.paymentMethod,
-                totalAmount: this.totalAmount,
-                date: new Date().toISOString()
+                totalAmount: this.totalAmount
             };
+
             try {
-                console.log('Sending sale data:', JSON.stringify(sale));
-                // Create sale
-                const saleResponse = await axios.post('https://posinet.onrender.com/api/sales', sale, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                console.log('Sale response:', saleResponse.data);
-
-                // Create or update customer
-                const customerData = {
-                    name: this.customerDetails.name,
-                    phone: this.customerDetails.phone,
-                    email: this.customerDetails.email,
-                    lastPurchaseDate: new Date().toISOString(),
-                    totalPurchases: this.totalAmount,
-                    lastSaleId: saleResponse.data.saleId
-                };
-                console.log('Sending customer data:', JSON.stringify(customerData));
-                const customerResponse = await axios.post('https://posinet.onrender.com/api/customers', customerData, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                console.log('Customer response:', customerResponse.data);
-
-                // Clear form
-                this.selectedProducts = [];
-                this.coupon = '';
-                this.customerDetails = { name: '', phone: '', email: '' };
-                this.totalAmount = 0;
-                this.error = '';
-
-                // Show success message
-                this.$emit('sale-completed', saleResponse.data.saleId);
-                alert(`Sale completed successfully! Sale ID: ${saleResponse.data.saleId}`);
-            } catch (error) {
-                console.error('Error completing sale:', error);
-                if (error.response) {
-                    console.error('Error response:', error.response.data);
-                    console.error('Error status:', error.response.status);
-                    console.error('Error headers:', error.response.headers);
-                } else if (error.request) {
-                    console.error('Error request:', error.request);
+                const response = await axios.post('https://posinet.onrender.com/api/sales', saleData);
+                if (response.status === 201) {
+                    this.$router.push('/receipt', { query: { saleId: response.data._id } });
                 } else {
-                    console.error('Error message:', error.message);
+                    this.error = 'An error occurred while processing the sale. Please try again.';
                 }
-                this.error = 'Error completing sale: ' + (error.response?.data?.message || error.message);
+            } catch (error) {
+                console.error('Error during sale submission:', error);
+                this.error = 'Error submitting sale: ' + error.message;
             }
-        },
-        formatCurrency(value) {
-            const numericValue = parseFloat(value);
-            return isNaN(numericValue) ? '-' : numericValue.toLocaleString('en-KE', { style: 'currency', currency: 'KES' });
-        },
+        }
+    },
+    watch: {
+        discount() {
+            this.calculateTotalAmount();
+        }
     }
 };
 </script>
 
 <style scoped>
-/* Add any specific styles if needed */
+/* Add your styles here */
 </style>

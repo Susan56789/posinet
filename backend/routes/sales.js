@@ -19,13 +19,14 @@ module.exports = (client, app, authenticate) => {
         }
     };
 
+
     //create new sale
     app.post('/api/sales', authenticate, async (req, res) => {
         const session = await client.startSession();
         session.startTransaction();
 
         try {
-            const { products, coupon, customerDetails, paymentMethod, totalAmount, date } = req.body;
+            const { products, discount, customerDetails, paymentMethod, totalAmount, date } = req.body;
 
             console.log('Received sale data:', req.body);
 
@@ -41,7 +42,7 @@ module.exports = (client, app, authenticate) => {
             const sale = {
                 _id: saleId,
                 products,
-                coupon,
+                discount,
                 customerDetails,
                 paymentMethod,
                 totalAmount,
@@ -154,7 +155,7 @@ module.exports = (client, app, authenticate) => {
     app.put('/api/sales/:id', authenticate, async (req, res) => {
         try {
             const { id } = req.params;
-            const { products, coupon, customerDetails, paymentMethod, totalAmount } = req.body;
+            const { products, discount, customerDetails, paymentMethod, totalAmount } = req.body;
 
             // Validate required fields
             if (!products || !customerDetails || !paymentMethod || !totalAmount) {
@@ -163,7 +164,7 @@ module.exports = (client, app, authenticate) => {
 
             const updatedSale = {
                 products,
-                coupon,
+                discount,
                 customerDetails,
                 paymentMethod,
                 totalAmount,
