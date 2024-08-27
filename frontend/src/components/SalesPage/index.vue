@@ -169,17 +169,16 @@ export default {
     },
     methods: {
         async fetchLatestProducts() {
-            const token = localStorage.getItem('token');
             try {
-                const res = await axios.get('https://posinet.onrender.com/api/products/latest', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const res = await axios.get('https://posinet.onrender.com/api/products/latest');
                 this.latestProducts = res.data.map(product => ({
                     ...product,
-                    selectedQuantity: 0
+                    selectedQuantity: 0,
+                    price: product.salePrice
                 }));
             } catch (error) {
-                this.error = 'Error fetching latest products';
+                console.error('Error fetching latest products:', error);
+                this.error = 'Error fetching latest products: ' + error.message;
             }
         },
         async searchProduct() {
@@ -189,17 +188,17 @@ export default {
             }
 
             try {
-                const token = localStorage.getItem('token');
                 const response = await axios.get(`https://posinet.onrender.com/api/products/search`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                    params: { query: this.searchQuery }
+                    params: { q: this.searchQuery }
                 });
                 this.searchResults = response.data.map(product => ({
                     ...product,
-                    selectedQuantity: product.selectedQuantity || 0
+                    selectedQuantity: product.selectedQuantity || 0,
+                    price: product.discountedPrice && product.discountedPrice > 0 ? product.discountedPrice : product.price
                 }));
             } catch (error) {
-                this.error = 'Error searching for products';
+                console.error('Error searching for products:', error);
+                this.error = 'Error searching for products: ' + error.message;
             }
         },
         addProductToSale(product) {
@@ -207,7 +206,11 @@ export default {
             if (existingProduct) {
                 existingProduct.selectedQuantity += 1;
             } else {
-                this.selectedProducts.push({ ...product, selectedQuantity: 1 });
+                this.selectedProducts.push({
+                    ...product,
+                    selectedQuantity: 1,
+                    price: product.salePrice
+                });
             }
             this.searchQuery = '';
             this.searchResults = [];

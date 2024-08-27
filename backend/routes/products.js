@@ -165,13 +165,17 @@ module.exports = function (client, app, authenticate) {
     });
 
     // Get the latest products
-    app.get('/api/products/latest', authenticate, async (req, res) => {
+    app.get('/api/products/latest', async (req, res) => {
         try {
             const latestProducts = await products.find().sort({ createdAt: -1 }).limit(10).toArray();
-            res.status(200).json(latestProducts);
+            const processedProducts = latestProducts.map(product => ({
+                ...product,
+                salePrice: product.discountedPrice && product.discountedPrice > 0 ? product.discountedPrice : product.price
+            }));
+            res.status(200).json(processedProducts);
         } catch (error) {
             console.error('Error fetching latest products:', error);
-            res.status(500).json({ message: 'Error fetching latest products', error });
+            res.status(500).json({ message: 'Error fetching latest products', error: error.toString() });
         }
     });
 
