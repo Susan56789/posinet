@@ -57,11 +57,11 @@
                     <span v-if="item.dateClosed">
                         | Closed: {{ formatDate(item.dateClosed) }}
                     </span>
-                    | Estimated Amount: ${{ item.estimatedAmount }}
+                    | Estimated Amount: {{ formatCurrency(item.estimatedAmount) }}
                 </div>
                 <div class="text-sm text-gray-600">
-                    Customer: {{ item.customerName }} | Phone: {{ item.customerPhone }} | Email: {{ item.customerEmail
-                    }}
+                    Customer: {{ getCustomerName(item) }} | Phone: {{ getCustomerPhone(item) }} | Email: {{
+                    getCustomerEmail(item) }}
                 </div>
             </div>
         </div>
@@ -117,6 +117,9 @@ export default {
         this.fetchItems();
     },
     methods: {
+        formatCurrency(amount) {
+            return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount);
+        },
         async fetchItems() {
             try {
                 const token = localStorage.getItem('token');
@@ -151,15 +154,44 @@ export default {
                     return;
                 }
 
-                const response = await axios.post(
-                    'https://posinet.onrender.com/api/repairs',
+                // First, check if the customer exists
+                const customerResponse = await axios.get(
+                    `https://posinet.onrender.com/api/customers?search=${this.newItem.customerEmail}`,
                     {
-                        name: this.newItem.name,
-                        customerDetails: {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        }
+                    }
+                );
+
+                let customerId;
+                if (customerResponse.data.length > 0) {
+                    // Customer exists, use their ID
+                    customerId = customerResponse.data[0]._id;
+                } else {
+                    // Customer doesn't exist, create a new one
+                    const newCustomerResponse = await axios.post(
+                        'https://posinet.onrender.com/api/customers',
+                        {
                             name: this.newItem.customerName,
                             phone: this.newItem.customerPhone,
                             email: this.newItem.customerEmail
                         },
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            }
+                        }
+                    );
+                    customerId = newCustomerResponse.data._id;
+                }
+
+                // Now create the repair item with the customer ID
+                const response = await axios.post(
+                    'https://posinet.onrender.com/api/repairs',
+                    {
+                        name: this.newItem.name,
+                        customerId: customerId,
                         estimatedAmount: parseFloat(this.newItem.estimatedAmount)
                     },
                     {
@@ -220,11 +252,11 @@ export default {
             const data = this.items.map(item => ({
                 Name: item.name,
                 Status: item.status,
-                'Estimated Amount': item.estimatedAmount,
-                'Actual Amount': item.actualAmount || 'N/A',
-                'Customer Name': item.customerName,
-                'Customer Phone': item.customerPhone,
-                'Customer Email': item.customerEmail,
+                'Estimated Amount': this.formatCurrency(item.estimatedAmount),
+                'Actual Amount': item.actualAmount ? this.formatCurrency(item.actualAmount) : 'N/A',
+                'Customer Name': item.customerDetails.name,
+                'Customer Phone': item.customerDetails.phone,
+                'Customer Email': item.customerDetails.email,
                 Created: this.formatDate(item.dateCreated),
                 Closed: item.dateClosed ? this.formatDate(item.dateClosed) : 'N/A'
             }));
@@ -234,6 +266,7 @@ export default {
             XLSX.utils.book_append_sheet(wb, ws, 'Repair Items');
             XLSX.writeFile(wb, 'repair_items.xlsx');
         },
+
     },
 };
 </script>
