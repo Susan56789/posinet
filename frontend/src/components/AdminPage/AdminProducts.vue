@@ -28,7 +28,7 @@
 
                 <!-- Image Previews -->
                 <div v-if="imagePreviews.length" class="mt-4">
-                    <h3 class="text-lg font-semibold mb-2">Image Preview:</h3>
+                    <h3 class="text-lg font-semibold mb-2">Image Previews:</h3>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div v-for="(image, index) in imagePreviews" :key="index" class="relative">
                             <img :src="image" alt="Preview" class="w-full h-32 object-cover rounded-md" />
@@ -63,12 +63,11 @@
             <tbody>
                 <tr v-for="product in paginatedProducts" :key="product._id" class="border-b">
                     <td class="py-2 px-4">
-                        <img v-if="product.imageUrl" :src="product.imageUrl" alt="product image"
-                            class="w-16 h-16 object-cover" />
+                        <img v-if="product.imageUrls && product.imageUrls.length" :src="product.imageUrls[0]"
+                            alt="product image" class="w-16 h-16 object-cover" />
                         <span v-else>No image</span>
                     </td>
                     <td class="py-2 px-4">{{ product.title }}</td>
-
                     <td class="py-2 px-4">{{ formatCurrency(product.price) }}</td>
                     <td class="py-2 px-4">{{ formatCurrency(product.discountedPrice) }}</td>
                     <td class="py-2 px-4">{{ product.stock }}</td>
@@ -97,6 +96,7 @@
         </div>
     </div>
 </template>
+
 <script>
 import axios from 'axios';
 
@@ -117,9 +117,9 @@ export default {
                 price: '',
                 discountedPrice: '',
                 stock: '',
-                images: []
+                images: [] // This will hold the actual File objects
             },
-            imagePreviews: [],
+            imagePreviews: [], // This holds the base64 preview URLs
             searchQuery: '',
             currentPage: 1,
             itemsPerPage: 20
@@ -140,19 +140,16 @@ export default {
                 const response = await axios.get('https://posinet.onrender.com/api/products');
                 const items = response.data.map(product => ({
                     ...product,
-                    imageUrl: product.images && product.images.length > 0
-                        ? `data:${product.images[0].contentType};base64,${product.images[0].data}`
-                        : null
+                    imageUrls: product.images.map(img => `data:${img.contentType};base64,${img.data}`)
                 }));
 
                 this.products = items;
-                this.applyFilters();  // Apply search and pagination after fetching
+                this.applyFilters();
             } catch (error) {
-                console.error('Error fetching products:', error);
+                console.error('Error fetching products:', error.response ? error.response.data : error.message);
             }
         },
         applyFilters() {
-            // Filter products based on search query
             if (this.searchQuery.trim()) {
                 this.filteredProducts = this.products.filter(product =>
                     product.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -162,8 +159,7 @@ export default {
             } else {
                 this.filteredProducts = this.products;
             }
-
-            this.currentPage = 1; // Reset to the first page after filtering
+            this.currentPage = 1;
             this.paginateProducts();
         },
         paginateProducts() {
@@ -223,12 +219,14 @@ export default {
                     }
                 });
 
-                await axios.post('https://posinet.onrender.com/api/products', formData);
-                this.resetForm();
-                this.showForm = false;
-                this.fetchProducts();
+                const response = await axios.post('https://posinet.onrender.com/api/products', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+                this.products.push(response.data);
+                this.applyFilters();
+                this.cancelForm();
             } catch (error) {
-                console.error('Error creating product:', error);
+                console.error('Error creating product:', error.response ? error.response.data : error.message);
             } finally {
                 this.isSubmitting = false;
             }
@@ -249,29 +247,22 @@ export default {
                     }
                 });
 
-                await axios.put(`https://posinet.onrender.com/api/product/${this.productForm._id}`, formData);
-                this.resetForm();
-                this.showForm = false;
+                await axios.put(`https://posinet.onrender.com/api/product/${this.productForm._id}`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
                 this.fetchProducts();
+                this.cancelForm();
             } catch (error) {
-                console.error('Error updating product:', error);
+                console.error('Error updating product:', error.response ? error.response.data : error.message);
             } finally {
                 this.isSubmitting = false;
             }
         },
-        async deleteProduct(productId) {
-            try {
-                await axios.delete(`https://posinet.onrender.com/api/product/${productId}`);
-                this.fetchProducts();
-            } catch (error) {
-                console.error('Error deleting product:', error);
-            }
-        },
         editProduct(product) {
-            this.productForm = { ...product, images: [] };  // Images need special handling
-            this.imagePreviews = product.images.map(img => `data:${img.contentType};base64,${img.data}`);
             this.showForm = true;
             this.editMode = true;
+            this.productForm = { ...product, images: [] };
+            this.imagePreviews = product.imageUrls || [];
         },
         cancelForm() {
             this.showForm = false;
@@ -289,10 +280,23 @@ export default {
             };
             this.imagePreviews = [];
             this.isSubmitting = false;
+        },
+        async deleteProduct(id) {
+            try {
+                await axios.delete(`https://posinet.onrender.com/api/product/${id}`);
+                this.products = this.products.filter(product => product._id !== id);
+                this.applyFilters();
+            } catch (error) {
+                console.error('Error deleting product:', error.response ? error.response.data : error.message);
+            }
         }
     },
-    mounted() {
+    created() {
         this.fetchProducts();
     }
 };
 </script>
+
+<style scoped>
+/* Add your styling here */
+</style>

@@ -32,32 +32,27 @@ module.exports = function (client, app, authenticate) {
         try {
             const { title, description, price, stock, category, discountedPrice } = req.body;
 
-            // Ensure all required fields are provided
             if (!title || !description || !price || !stock) {
                 return res.status(400).json({ message: 'All fields are required.' });
             }
 
-            // Check for existing product with the same title (unique constraint)
             const existingProduct = await products.findOne({ title });
             if (existingProduct) {
                 return res.status(400).json({ message: 'Product with this title already exists.' });
             }
 
-            // Validate image types
-            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
             const isValidType = req.files.every(file => validTypes.includes(file.mimetype));
 
             if (!isValidType) {
-                return res.status(400).json({ message: 'Invalid image type. Allowed types are JPEG, PNG, and GIF.' });
+                return res.status(400).json({ message: 'Invalid image type. Allowed types are JPEG, PNG, WEBP, and GIF.' });
             }
 
-            // Convert images to base64 format
             const images = req.files.map(file => ({
                 data: file.buffer.toString('base64'),
                 contentType: file.mimetype
             }));
 
-            // Create new product object
             const newProduct = {
                 title,
                 description,
@@ -69,7 +64,6 @@ module.exports = function (client, app, authenticate) {
                 createdAt: new Date()
             };
 
-            // Insert the new product into the database
             const result = await products.insertOne(newProduct);
 
             if (result.insertedId) {
@@ -124,7 +118,6 @@ module.exports = function (client, app, authenticate) {
             const { id } = req.params;
             const { title, category, description, price, stock, discountedPrice } = req.body;
 
-            // Ensure required fields are provided and valid
             const productData = {
                 title,
                 category,
@@ -140,12 +133,11 @@ module.exports = function (client, app, authenticate) {
 
             // Process new images if any
             if (req.files && req.files.length > 0) {
-                // Validate image types
-                const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
                 const isValidType = req.files.every(file => validTypes.includes(file.mimetype));
 
                 if (!isValidType) {
-                    return res.status(400).json({ message: 'Invalid image type. Allowed types are JPEG, PNG, and GIF.' });
+                    return res.status(400).json({ message: 'Invalid image type. Allowed types are JPEG, PNG, WEBP, and GIF.' });
                 }
 
                 productData.images = req.files.map(file => ({
@@ -172,6 +164,7 @@ module.exports = function (client, app, authenticate) {
             res.status(500).json({ message: 'Error updating product', error: error.message });
         }
     });
+
     // Delete product route
     app.delete('/api/product/:id', authenticate, async (req, res) => {
         try {
