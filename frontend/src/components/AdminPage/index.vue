@@ -85,7 +85,7 @@ export default {
             stats: {
                 productCount: 0,
                 userCount: 0,
-                totalSales: 0, // This will now represent today's sales
+                totalSales: 0,
                 needReorderCount: 0,
             },
             recentSales: [],
@@ -136,8 +136,8 @@ export default {
                 this.stats.totalSales = data.totalSales;
                 this.stats.needReorderCount = data.needReorderCount;
 
-                this.recentSales = recentSalesData.data || [];
-                this.recentActivities = activitiesData.data || [];
+                this.recentSales = recentSalesData.data.slice(0, 10) || [];
+                this.recentActivities = activitiesData.data.slice(0, 10) || [];
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
 

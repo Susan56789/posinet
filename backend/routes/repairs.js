@@ -21,7 +21,6 @@ module.exports = (client, app, authenticate) => {
         }
     });
 
-    // Add new repair item
     app.post('/api/repairs', authenticate, async (req, res) => {
         const session = await client.startSession();
         session.startTransaction();
@@ -44,13 +43,14 @@ module.exports = (client, app, authenticate) => {
                     { session }
                 );
             } else {
-                customer = await customers.insertOne({
+                const customerResult = await customers.insertOne({
                     name: customerName,
                     phone,
                     email,
                     totalPurchases: 0,
                     creditLimit: 0 // Default credit limit
                 }, { session });
+                customer = { _id: customerResult.insertedId };
             }
 
             const newItem = {
@@ -65,14 +65,20 @@ module.exports = (client, app, authenticate) => {
             const result = await repairs.insertOne(newItem, { session });
 
             await session.commitTransaction();
-            res.status(201).json(result.ops[0]);
+
+            // Combine the newItem with the generated _id
+            const responseItem = result.insertedId ? { ...newItem, _id: result.insertedId } : newItem;
+
+            res.status(201).json(responseItem);
         } catch (error) {
             await session.abortTransaction();
-            res.status(400).json({ message: error.message });
+            console.error('Error adding repair item:', error);
+            res.status(400).json({ message: error.message || 'Error adding repair item' });
         } finally {
             await session.endSession();
         }
     });
+
 
     // Update repair item
     app.put('/api/repairs/:id', authenticate, async (req, res) => {

@@ -178,15 +178,29 @@ export default {
         },
         async updateItem(item) {
             try {
-                const response = await axios.put(`https://posinet.onrender.com/api/repairs/${item._id}`, {
-                    name: item.name,
-                    status: item.status,
-                    actualAmount: item.actualAmount
-                });
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('Authentication token is missing.');
+                    return;
+                }
+
+                const response = await axios.put(
+                    `https://posinet.onrender.com/api/repairs/${item._id}`,
+                    {
+                        name: item.name,
+                        status: item.status,
+                        actualAmount: item.actualAmount
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        }
+                    }
+                );
                 Object.assign(item, response.data);
             } catch (error) {
                 console.error('Error updating item:', error);
-                alert('Error updating item: ' + error.response.data.message);
+                alert('Error updating item: ' + (error.response?.data?.message || error.message));
             }
         },
         formatDate(date) {

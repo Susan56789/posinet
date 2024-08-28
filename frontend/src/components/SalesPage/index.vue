@@ -324,8 +324,6 @@ export default {
 
                 };
 
-                console.log('Sending sale data:', JSON.stringify(sale, null, 2));
-
                 const token = localStorage.getItem('token');
                 if (!token) {
                     throw new Error('Authorization token is missing. Please log in again.');

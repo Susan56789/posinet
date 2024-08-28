@@ -82,7 +82,7 @@ export default {
     data() {
         return {
             loading: true,
-            receiptId: this.$route.params.saleId || "", // Correctly extract saleId from URL parameters
+            receiptId: this.$route.params.saleId || "",
             receipt: {
                 customerDetails: {
                     name: "",
@@ -99,7 +99,7 @@ export default {
         };
     },
     created() {
-        this.fetchReceipt(); // Fetch the receipt when the component is created
+        this.fetchReceipt();
     },
     computed: {
         formattedDate() {
@@ -117,20 +117,20 @@ export default {
             try {
                 const token = localStorage.getItem('token');
                 const response = await axios.get(
-                    `https://posinet.onrender.com/api/sales/${this.receiptId}`, // Make sure to use the correct URL path
+                    `https://posinet.onrender.com/api/sales/${this.receiptId}`,
                     {
                         headers: {
-                            Authorization: `Bearer ${token}` // Use the stored token for authentication
+                            Authorization: `Bearer ${token}`
                         }
                     }
                 );
-                this.receipt = response.data; // Assign the fetched receipt data to the component's data
+                this.receipt = response.data;
             } catch (error) {
                 console.error("Error fetching receipt:", error);
                 if (error.response && error.response.status === 401) {
                     this.error = "Unauthorized: Please log in to view this receipt.";
                 } else if (error.response && error.response.status === 404) {
-                    this.error = "Sale not found."; // Handle case where the sale is not found
+                    this.error = "Sale not found.";
                 } else {
                     this.error = "Error fetching receipt: " + error.message;
                 }
@@ -139,7 +139,7 @@ export default {
             }
         },
         formatCurrency(amount) {
-            return `Ksh ${amount.toLocaleString()}`; // Format currency in Ksh
+            return `Ksh ${amount.toLocaleString()}`;
         },
         printReceipt() {
             const printContent = document.getElementById('printableArea').innerHTML;
