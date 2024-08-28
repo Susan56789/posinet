@@ -120,6 +120,15 @@ export default {
         formatCurrency(amount) {
             return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount);
         },
+        getCustomerName(item) {
+            return item.customerDetails?.name || 'N/A';
+        },
+        getCustomerPhone(item) {
+            return item.customerDetails?.phone || 'N/A';
+        },
+        getCustomerEmail(item) {
+            return item.customerDetails?.email || 'N/A';
+        },
         async fetchItems() {
             try {
                 const token = localStorage.getItem('token');

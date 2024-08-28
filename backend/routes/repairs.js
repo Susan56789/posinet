@@ -8,18 +8,36 @@ module.exports = (client, app, authenticate) => {
     const customers = database.collection("customers");
     const sales = database.collection("sales");
 
-    // Get all repair items
+    // Get all repair items with customer details
     app.get('/api/repairs', authenticate, async (req, res) => {
         try {
             const query = req.query.search
                 ? { name: { $regex: req.query.search, $options: 'i' } }
                 : {};
+
             const items = await repairs.find(query).toArray();
-            res.json(items);
+
+            // Fetch associated customer details for each repair item
+            const itemsWithCustomerDetails = await Promise.all(items.map(async item => {
+                const customer = await customers.findOne({ _id: new ObjectId(item.customerId) });
+                return {
+                    ...item,
+                    customerDetails: customer
+                        ? {
+                            name: customer.name,
+                            phone: customer.phone,
+                            email: customer.email
+                        }
+                        : null
+                };
+            }));
+
+            res.json(itemsWithCustomerDetails);
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
     });
+
 
     app.post('/api/repairs', authenticate, async (req, res) => {
         const session = await client.startSession();
