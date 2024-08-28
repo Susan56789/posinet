@@ -9,8 +9,8 @@ module.exports = function (client, app, authenticate) {
 
     // Multer setup to handle file uploads in memory
     const upload = multer({
-        limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit for each file
-        storage: multer.memoryStorage() // Store in memory before handling
+        limits: { fileSize: 20 * 1024 * 1024 },
+        storage: multer.memoryStorage()
     });
 
     // Log activity for product operations
@@ -41,16 +41,20 @@ module.exports = function (client, app, authenticate) {
                 return res.status(400).json({ message: 'Product with this title already exists.' });
             }
 
-            const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-            const isValidType = req.files.every(file => validTypes.includes(file.mimetype));
+            // Process images as streams
+            const imageStreams = req.files.map(file => {
+                const bufferStream = new stream.PassThrough();
+                bufferStream.end(file.buffer);
 
-            if (!isValidType) {
-                return res.status(400).json({ message: 'Invalid image type. Allowed types are JPEG, PNG, WEBP, and GIF.' });
-            }
+                return {
+                    stream: bufferStream,      // Stream object for further processing
+                    contentType: file.mimetype // Store MIME type
+                };
+            });
 
-            const images = req.files.map(file => ({
-                data: file.buffer.toString('base64'),
-                contentType: file.mimetype
+            const images = imageStreams.map(image => ({
+                data: image.stream.read().toString('base64'), // Convert stream to base64
+                contentType: image.contentType
             }));
 
             const newProduct = {
@@ -79,6 +83,7 @@ module.exports = function (client, app, authenticate) {
             res.status(500).json({ message: 'Internal Server Error', error: err.message });
         }
     });
+
 
     // Get all products
     app.get('/api/products', async (req, res) => {
@@ -118,6 +123,12 @@ module.exports = function (client, app, authenticate) {
             const { id } = req.params;
             const { title, category, description, price, stock, discountedPrice } = req.body;
 
+            // Ensure valid data is provided
+            if (!title || !description || isNaN(parseFloat(price)) || isNaN(parseInt(stock, 10))) {
+                return res.status(400).json({ message: 'Invalid product data' });
+            }
+
+            // Prepare the update data
             const productData = {
                 title,
                 category,
@@ -127,23 +138,25 @@ module.exports = function (client, app, authenticate) {
                 discountedPrice: discountedPrice ? parseFloat(discountedPrice) : null
             };
 
-            if (!productData.title || !productData.description || isNaN(productData.price) || isNaN(productData.stock)) {
-                return res.status(400).json({ message: 'Invalid product data' });
-            }
-
             // Process new images if any
             if (req.files && req.files.length > 0) {
-                const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
                 const isValidType = req.files.every(file => validTypes.includes(file.mimetype));
 
                 if (!isValidType) {
                     return res.status(400).json({ message: 'Invalid image type. Allowed types are JPEG, PNG, WEBP, and GIF.' });
                 }
 
-                productData.images = req.files.map(file => ({
-                    data: file.buffer.toString('base64'),
-                    contentType: file.mimetype
-                }));
+                // Convert images to streams and store as base64
+                productData.images = req.files.map(file => {
+                    const bufferStream = new stream.PassThrough();
+                    bufferStream.end(file.buffer);
+
+                    return {
+                        data: bufferStream.read().toString('base64'), // Convert stream to base64
+                        contentType: file.mimetype
+                    };
+                });
             }
 
             const result = await products.updateOne(

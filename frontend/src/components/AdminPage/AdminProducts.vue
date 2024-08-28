@@ -23,17 +23,32 @@
                     class="border p-2 mb-2 w-full" />
                 <input v-model="productForm.stock" type="number" placeholder="Stock" required
                     class="border p-2 mb-2 w-full" />
-                <input type="file" @change="handleFileUpload" multiple accept="image/*"
-                    class="border p-2 mb-2 w-full" />
+                <div>
+                    <!-- Image Upload Section -->
+                    <label for="images-input" class="block text-gray-700 font-semibold mb-2">Upload Images</label>
+                    <div class="flex items-center justify-center w-full">
+                        <label for="images-input"
+                            class="flex flex-col w-full h-32 border-4 border-dashed border-gray-400 hover:bg-gray-100 rounded-lg cursor-pointer transition-all duration-300">
+                            <div class="flex flex-col items-center justify-center pt-7">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400"></i>
+                                <p class="text-sm text-gray-500">
+                                    <span class="font-semibold">Click to upload</span> or drag and drop
+                                </p>
+                            </div>
+                            <input id="images-input" type="file" multiple class="hidden"
+                                accept="image/png, image/jpeg, image/webp" @change="handleFileUpload" />
+                        </label>
+                    </div>
 
-                <!-- Image Previews -->
-                <div v-if="imagePreviews.length" class="mt-4">
-                    <h3 class="text-lg font-semibold mb-2">Image Previews:</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <div v-for="(image, index) in imagePreviews" :key="index" class="relative">
-                            <img :src="image" alt="Preview" class="w-full h-32 object-cover rounded-md" />
-                            <button @click="removeImage(index)"
-                                class="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full">×</button>
+                    <!-- Image Preview Section -->
+                    <div v-if="imagePreviews.length" class="mt-4">
+                        <h3 class="text-lg font-semibold mb-2">Image Preview:</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div v-for="(image, index) in imagePreviews" :key="index" class="relative">
+                                <img :src="image" alt="Preview" class="w-full h-32 object-cover rounded-md" />
+                                <button @click="removeImage(index)"
+                                    class="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full">×</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -117,9 +132,9 @@ export default {
                 price: '',
                 discountedPrice: '',
                 stock: '',
-                images: [] // This will hold the actual File objects
+                images: []
             },
-            imagePreviews: [], // This holds the base64 preview URLs
+            imagePreviews: [],
             searchQuery: '',
             currentPage: 1,
             itemsPerPage: 20
@@ -150,15 +165,14 @@ export default {
             }
         },
         applyFilters() {
-            if (this.searchQuery.trim()) {
-                this.filteredProducts = this.products.filter(product =>
-                    product.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                    product.description.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                    product.category.toLowerCase().includes(this.searchQuery.toLowerCase())
-                );
-            } else {
-                this.filteredProducts = this.products;
-            }
+            const query = this.searchQuery.trim().toLowerCase();
+            this.filteredProducts = query
+                ? this.products.filter(product =>
+                    product.title.toLowerCase().includes(query) ||
+                    product.description.toLowerCase().includes(query) ||
+                    product.category.toLowerCase().includes(query))
+                : this.products;
+
             this.currentPage = 1;
             this.paginateProducts();
         },
@@ -185,88 +199,14 @@ export default {
             this.resetForm();
         },
         handleFileUpload(event) {
-            const files = event.target.files;
-            this.productForm.images = [];
-            this.imagePreviews = [];
+            const files = Array.from(event.target.files);
+            this.productForm.images = files;
 
-            Array.from(files).forEach((file) => {
-                this.productForm.images.push(file);
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.imagePreviews.push(e.target.result);
-                };
-                reader.readAsDataURL(file);
-            });
+            this.imagePreviews = files.map(file => URL.createObjectURL(file));
         },
         removeImage(index) {
             this.productForm.images.splice(index, 1);
             this.imagePreviews.splice(index, 1);
-        },
-        async createProduct() {
-            try {
-                if (this.isSubmitting) return;
-                this.isSubmitting = true;
-
-                const formData = new FormData();
-                Object.keys(this.productForm).forEach((key) => {
-                    if (key === 'images') {
-                        this.productForm.images.forEach((image, index) => {
-                            formData.append(`images[${index}]`, image);
-                        });
-                    } else {
-                        formData.append(key, this.productForm[key]);
-                    }
-                });
-
-                const response = await axios.post('https://posinet.onrender.com/api/products', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                });
-                this.products.push(response.data);
-                this.applyFilters();
-                this.cancelForm();
-            } catch (error) {
-                console.error('Error creating product:', error.response ? error.response.data : error.message);
-            } finally {
-                this.isSubmitting = false;
-            }
-        },
-        async updateProduct() {
-            try {
-                if (this.isSubmitting) return;
-                this.isSubmitting = true;
-
-                const formData = new FormData();
-                Object.keys(this.productForm).forEach((key) => {
-                    if (key === 'images') {
-                        this.productForm.images.forEach((image, index) => {
-                            formData.append(`images[${index}]`, image);
-                        });
-                    } else {
-                        formData.append(key, this.productForm[key]);
-                    }
-                });
-
-                await axios.put(`https://posinet.onrender.com/api/product/${this.productForm._id}`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                });
-                this.fetchProducts();
-                this.cancelForm();
-            } catch (error) {
-                console.error('Error updating product:', error.response ? error.response.data : error.message);
-            } finally {
-                this.isSubmitting = false;
-            }
-        },
-        editProduct(product) {
-            this.showForm = true;
-            this.editMode = true;
-            this.productForm = { ...product, images: [] };
-            this.imagePreviews = product.imageUrls || [];
-        },
-        cancelForm() {
-            this.showForm = false;
-            this.resetForm();
         },
         resetForm() {
             this.productForm = {
@@ -279,24 +219,82 @@ export default {
                 images: []
             };
             this.imagePreviews = [];
-            this.isSubmitting = false;
         },
-        async deleteProduct(id) {
+        async createProduct() {
+            this.isSubmitting = true;
             try {
-                await axios.delete(`https://posinet.onrender.com/api/product/${id}`);
-                this.products = this.products.filter(product => product._id !== id);
-                this.applyFilters();
+                const formData = new FormData();
+                Object.keys(this.productForm).forEach(key => {
+                    if (key === 'images') {
+                        this.productForm.images.forEach(image => formData.append('images', image));
+                    } else {
+                        formData.append(key, this.productForm[key]);
+                    }
+                });
+
+                await axios.post('https://posinet.onrender.com/api/products', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+
+                this.showForm = false;
+                this.fetchProducts();
             } catch (error) {
-                console.error('Error deleting product:', error.response ? error.response.data : error.message);
+                console.error('Error creating product:', error.response ? error.response.data : error.message);
+            } finally {
+                this.isSubmitting = false;
             }
+        },
+        editProduct(product) {
+            this.showForm = true;
+            this.editMode = true;
+            this.productForm = { ...product, images: [] };
+            this.imagePreviews = product.imageUrls;
+        },
+        async updateProduct() {
+            this.isSubmitting = true;
+            try {
+                const formData = new FormData();
+                Object.keys(this.productForm).forEach(key => {
+                    if (key === 'images') {
+                        this.productForm.images.forEach(image => formData.append('images', image));
+                    } else {
+                        formData.append(key, this.productForm[key]);
+                    }
+                });
+
+                await axios.put(`https://posinet.onrender.com/api/products/${this.productForm._id}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+
+                this.showForm = false;
+                this.fetchProducts();
+            } catch (error) {
+                console.error('Error updating product:', error.response ? error.response.data : error.message);
+            } finally {
+                this.isSubmitting = false;
+            }
+        },
+        async deleteProduct(productId) {
+            if (confirm('Are you sure you want to delete this product?')) {
+                try {
+                    await axios.delete(`https://posinet.onrender.com/api/products/${productId}`);
+                    this.fetchProducts();
+                } catch (error) {
+                    console.error('Error deleting product:', error.response ? error.response.data : error.message);
+                }
+            }
+        },
+        cancelForm() {
+            this.showForm = false;
+            this.resetForm();
         }
     },
-    created() {
+    mounted() {
         this.fetchProducts();
     }
 };
 </script>
-
-<style scoped>
-/* Add your styling here */
-</style>

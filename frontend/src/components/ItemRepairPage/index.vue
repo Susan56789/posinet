@@ -119,7 +119,12 @@ export default {
     methods: {
         async fetchItems() {
             try {
-                const response = await axios.get('https://posinet.onrender.com/api/repairs');
+                const token = localStorage.getItem('token');
+                const response = await axios.get('https://posinet.onrender.com/api/repairs', {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
                 this.items = response.data;
             } catch (error) {
                 console.error('Error fetching items:', error);
@@ -140,21 +145,35 @@ export default {
                 return;
             }
             try {
-                const response = await axios.post('https://posinet.onrender.com/api/repairs', {
-                    name: this.newItem.name,
-                    customerDetails: {
-                        name: this.newItem.customerName,
-                        phone: this.newItem.customerPhone,
-                        email: this.newItem.customerEmail
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('Authentication token is missing.');
+                    return;
+                }
+
+                const response = await axios.post(
+                    'https://posinet.onrender.com/api/repairs',
+                    {
+                        name: this.newItem.name,
+                        customerDetails: {
+                            name: this.newItem.customerName,
+                            phone: this.newItem.customerPhone,
+                            email: this.newItem.customerEmail
+                        },
+                        estimatedAmount: parseFloat(this.newItem.estimatedAmount)
                     },
-                    estimatedAmount: parseFloat(this.newItem.estimatedAmount)
-                });
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        }
+                    }
+                );
                 this.items.unshift(response.data);
                 this.newItem = { name: '', customerName: '', customerPhone: '', customerEmail: '', estimatedAmount: '' };
                 this.showNewItemForm = false;
             } catch (error) {
                 console.error('Error adding item:', error);
-                alert('Error adding item: ' + error.response.data.message);
+                alert('Error adding item: ' + (error.response?.data?.message || error.message));
             }
         },
         async updateItem(item) {
