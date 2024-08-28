@@ -16,7 +16,7 @@
         <table class="w-full bg-white shadow-md rounded-lg overflow-hidden">
             <thead class="bg-gray-200">
                 <tr>
-                    <th class="px-4 py-2">ID</th>
+
                     <th class="px-4 py-2">Date</th>
                     <th class="px-4 py-2">Customer</th>
                     <th class="px-4 py-2">Total Amount</th>
@@ -25,10 +25,10 @@
             </thead>
             <tbody>
                 <tr v-for="sale in paginatedSales" :key="sale._id" class="border-b">
-                    <td class="px-4 py-2">{{ sale._id }}</td>
+
                     <td class="px-4 py-2">{{ formatDate(sale.date) }}</td>
                     <td class="px-4 py-2">{{ sale.customerDetails.name }}</td>
-                    <td class="px-4 py-2">${{ sale.totalAmount.toFixed(2) }}</td>
+                    <td class="px-4 py-2">{{ formatCurrency(sale.totalAmount) }}</td>
                     <td class="px-4 py-2">
                         <button @click="editSale(sale)"
                             class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded mr-2">
@@ -140,6 +140,15 @@ export default {
             showEditModal.value = true;
         };
 
+        const formatCurrency = (value) => {
+            const numericValue = parseFloat(value);
+            return isNaN(numericValue)
+                ? '-'
+                : numericValue.toLocaleString('en-KE', {
+                    style: 'currency',
+                    currency: 'KES',
+                });
+        };
         const saveSale = async () => {
             try {
                 if (editingSale.value._id) {
@@ -191,6 +200,7 @@ export default {
             saveSale,
             deleteSale,
             openNewSaleModal,
+            formatCurrency
         };
     },
 };

@@ -46,7 +46,7 @@ module.exports = (client, app, authenticate) => {
         try {
             const { name, customerDetails, estimatedAmount } = req.body;
 
-            if (!name || !customerDetails || !estimatedAmount) {
+            if (!name || !estimatedAmount) {
                 throw new Error('Name, customer details, and estimated amount are required');
             }
 

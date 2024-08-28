@@ -1,62 +1,71 @@
 <template>
     <div class="container mx-auto p-4">
-        <h1 class="text-2xl font-bold mb-4">Item Repair</h1>
-        <div class="flex justify-between mb-4">
-            <!-- Search Bar -->
-            <div class="mb-4">
-                <input v-model="searchQuery" @input="searchItems" type="text" placeholder="Search items..."
-                    class="w-full p-2 border rounded">
-            </div>
+        <h1 class="text-3xl font-bold mb-6 text-center">Item Repair Management</h1>
 
-            <!-- Add New Item Button -->
-            <div class="mb-4">
-                <button @click="showNewItemForm = !showNewItemForm" class="bg-blue-500 text-white px-4 py-2 rounded">
+        <!-- Search and Add New Item -->
+        <div class="flex flex-col md:flex-row justify-between mb-6">
+            <div class="mb-4 md:mb-0 w-full md:w-1/2">
+                <input v-model="searchQuery" @input="searchItems" type="text" placeholder="Search items..."
+                    class="w-full p-3 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300">
+            </div>
+            <div class="w-full md:w-auto">
+                <button @click="showNewItemForm = !showNewItemForm"
+                    class="w-full md:w-auto bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition duration-200">
                     {{ showNewItemForm ? 'Cancel' : 'Add New Item' }}
                 </button>
             </div>
-
         </div>
 
-        <!-- Add New Item Form (Collapsible) -->
-        <div v-if="showNewItemForm" class="mb-4 space-y-2 bg-gray-100 p-4 rounded">
-            <input v-model="newItem.name" type="text" placeholder="Item name" class="w-full p-2 border rounded">
-            <input v-model="newItem.customerName" type="text" placeholder="Customer name"
-                class="w-full p-2 border rounded">
-            <input v-model="newItem.customerPhone" type="text" placeholder="Customer phone"
-                class="w-full p-2 border rounded">
-            <input v-model="newItem.customerEmail" type="email" placeholder="Customer email"
-                class="w-full p-2 border rounded">
-            <input v-model="newItem.estimatedAmount" type="number" placeholder="Estimated amount"
-                class="w-full p-2 border rounded">
-            <button @click="addItem" class="bg-green-500 text-white px-4 py-2 rounded">
-                Submit New Item
-            </button>
+        <!-- Add New Item Form -->
+        <div v-if="showNewItemForm" class="mb-6 p-4 bg-gray-100 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Add New Repair Item</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input v-model="newItem.name" type="text" placeholder="Item name"
+                    class="p-3 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300">
+                <input v-model="newItem.customerName" type="text" placeholder="Customer name"
+                    class="p-3 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300">
+                <input v-model="newItem.customerPhone" type="text" placeholder="Customer phone"
+                    class="p-3 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300">
+                <input v-model="newItem.customerEmail" type="email" placeholder="Customer email"
+                    class="p-3 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300">
+                <input v-model="newItem.estimatedAmount" type="number" placeholder="Estimated amount"
+                    class="p-3 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300">
+            </div>
+            <div class="mt-4 text-right">
+                <button @click="addItem"
+                    class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition duration-200">
+                    Submit New Item
+                </button>
+            </div>
         </div>
 
         <!-- Export to Excel Button -->
-        <div class="mb-4">
-            <button @click="exportToExcel" class="bg-green-500 text-white px-4 py-2 rounded">
+        <div class="text-right mb-6">
+            <button @click="exportToExcel"
+                class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition duration-200">
                 Export to Excel
             </button>
         </div>
 
         <!-- Items List -->
-        <div class="space-y-4">
-            <div v-for="item in paginatedItems" :key="item._id" class="border p-4 rounded">
-                <div class="flex justify-between items-center">
-                    <input v-model="item.name" @blur="updateItem(item)" class="text-lg font-semibold w-1/3">
-                    <select v-model="item.status" @change="updateItem(item)" class="p-2 border rounded">
+        <div class="grid grid-cols-1 gap-4">
+            <div v-for="item in paginatedItems" :key="item._id"
+                class="p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition duration-200">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <input v-model="item.name" @blur="updateItem(item)"
+                        class="text-lg font-semibold w-full md:w-1/3 mb-4 md:mb-0 p-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300">
+                    <select v-model="item.status" @change="updateItem(item)"
+                        class="w-full md:w-1/5 mb-4 md:mb-0 p-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300">
                         <option value="OPEN">Open</option>
                         <option value="CLOSED">Closed</option>
                     </select>
                     <input v-model="item.actualAmount" type="number" placeholder="Actual amount"
-                        @blur="updateItem(item)" class="p-2 border rounded w-1/4">
+                        @blur="updateItem(item)"
+                        class="w-full md:w-1/4 p-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300">
                 </div>
-                <div class="text-sm text-gray-600">
+                <div class="text-sm text-gray-600 mt-2">
                     Created: {{ formatDate(item.dateCreated) }}
-                    <span v-if="item.dateClosed">
-                        | Closed: {{ formatDate(item.dateClosed) }}
-                    </span>
+                    <span v-if="item.dateClosed">| Closed: {{ formatDate(item.dateClosed) }}</span>
                     | Estimated Amount: {{ formatCurrency(item.estimatedAmount) }}
                 </div>
                 <div class="text-sm text-gray-600">
@@ -67,14 +76,14 @@
         </div>
 
         <!-- Pagination -->
-        <div class="mt-4 flex justify-between items-center">
+        <div class="mt-6 flex justify-between items-center">
             <button @click="prevPage" :disabled="currentPage === 1"
-                class="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50">
+                class="bg-blue-500 text-white px-6 py-3 rounded-lg disabled:opacity-50 hover:bg-blue-600 transition duration-200">
                 Previous
             </button>
             <span>Page {{ currentPage }} of {{ totalPages }}</span>
             <button @click="nextPage" :disabled="currentPage === totalPages"
-                class="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50">
+                class="bg-blue-500 text-white px-6 py-3 rounded-lg disabled:opacity-50 hover:bg-blue-600 transition duration-200">
                 Next
             </button>
         </div>
@@ -275,7 +284,6 @@ export default {
             XLSX.utils.book_append_sheet(wb, ws, 'Repair Items');
             XLSX.writeFile(wb, 'repair_items.xlsx');
         },
-
     },
 };
 </script>
