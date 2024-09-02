@@ -216,6 +216,9 @@ module.exports = function (client, app, authenticate) {
     app.get('/api/products/search', authenticate, async (req, res) => {
         try {
             const query = req.query.q;
+            if (!query) {
+                return res.status(400).json({ message: 'Query parameter is required' });
+            }
             const regex = new RegExp(query, 'i');
             const searchedProducts = await products.find({
                 $or: [
@@ -229,4 +232,5 @@ module.exports = function (client, app, authenticate) {
             res.status(500).json({ message: 'Error searching for products', error });
         }
     });
+
 };
