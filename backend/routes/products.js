@@ -237,24 +237,23 @@ module.exports = function (client, app, authenticate) {
         try {
             const { query } = req.body;
 
+            if (!query) {
+                return res.status(400).json({ message: 'Query parameter is required' });
+            }
+
             // Create a regular expression to perform a case-insensitive search
             const searchRegex = new RegExp(query, 'i');
 
             // Find products where the title or description matches the search query
-            const product = await products.find({
+            const productsList = await products.find({
                 $or: [
                     { title: { $regex: searchRegex } },
                     { description: { $regex: searchRegex } }
                 ]
-            });
+            }).toArray(); // Convert the cursor to an array
 
             // If products found, return them
-            if (product.length > 0) {
-                res.json({ product });
-            } else {
-                // If no products found, return an empty array
-                res.json({ product: [] });
-            }
+            res.json({ products: productsList });
         } catch (error) {
             console.error('Error searching products:', error);
             res.status(500).json({ message: 'Error searching products', error: error.message });
