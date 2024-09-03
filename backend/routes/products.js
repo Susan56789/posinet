@@ -233,4 +233,32 @@ module.exports = function (client, app, authenticate) {
         }
     });
 
+    app.post('/api/products/search', async (req, res) => {
+        try {
+            const { query } = req.body;
+
+            // Create a regular expression to perform a case-insensitive search
+            const searchRegex = new RegExp(query, 'i');
+
+            // Find products where the title or description matches the search query
+            const product = await products.find({
+                $or: [
+                    { title: { $regex: searchRegex } },
+                    { description: { $regex: searchRegex } }
+                ]
+            });
+
+            // If products found, return them
+            if (product.length > 0) {
+                res.json({ product });
+            } else {
+                // If no products found, return an empty array
+                res.json({ product: [] });
+            }
+        } catch (error) {
+            console.error('Error searching products:', error);
+            res.status(500).json({ message: 'Error searching products', error: error.message });
+        }
+    });
+
 };

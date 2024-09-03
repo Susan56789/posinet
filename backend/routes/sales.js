@@ -126,7 +126,6 @@ module.exports = (client, app, authenticate) => {
     });
 
 
-
     // Get all sales
     app.get('/api/sales', authenticate, async (req, res) => {
         try {
