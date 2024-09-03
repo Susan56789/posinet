@@ -212,151 +212,127 @@ export default {
                 this.error = 'Error fetching latest products: ' + error.message;
             }
         },
-        async searchProduct() {
-            try {
-                const token = localStorage.getItem('token');
-                const headers = {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                };
-                const response = await axios.post('https://posinet.onrender.com/api/products/search', {
-                    query: this.searchQuery
-                }, { headers });
-
-                // Ensure response.data.products is defined and is an array
-                if (response.data && Array.isArray(response.data.products)) {
-                    this.searchResults = response.data.products.map(product => ({
-                        ...product,
-                        selectedQuantity: 0,
-                        price: product.salePrice
-                    }));
-                } else {
-                    // Handle the case where products is not defined or is not an array
-                    this.searchResults = [];
-                    console.error('Unexpected response structure:', response.data);
-                }
-            } catch (error) {
-                console.error('Error searching products:', error);
-                this.error = 'Error searching products: ' + error.message;
+        searchProduct() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Authorization token is missing. Please log in again.');
             }
-        },
-        formatCurrency(value) {
-            const numericValue = parseFloat(value);
-            return isNaN(numericValue) ? '-' : numericValue.toLocaleString('en-KE', { style: 'currency', currency: 'KES' });
+
+            if (this.searchQuery.length < 2) return;
+            axios
+                .get(`https://posinet.onrender.com/api/products/search?q=${this.searchQuery}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                })
+                .then(response => {
+                    this.searchResults = response.data;
+                })
+                .catch(error => {
+                    console.error('Error searching for product:', error);
+                    this.error = 'Error searching for product: ' + error.message;
+                });
         },
         addProductToSale(product) {
             const existingProduct = this.selectedProducts.find(p => p._id === product._id);
+
             if (existingProduct) {
                 existingProduct.selectedQuantity++;
             } else {
-                product.selectedQuantity = 1;
-                this.selectedProducts.push(product);
+                this.selectedProducts.push({
+                    ...product,
+                    selectedQuantity: 1
+                });
             }
-            this.calculateTotals();
+
+            this.calculateTotal();
         },
-        increaseQuantity(product) {
-            const existingProduct = this.selectedProducts.find(p => p._id === product._id);
-            if (existingProduct) {
-                if (existingProduct.selectedQuantity < product.stock) {
-                    existingProduct.selectedQuantity++;
-                }
-            } else {
-                product.selectedQuantity = 1;
-                this.selectedProducts.push(product);
-            }
-            this.calculateTotals();
-        },
-        decreaseQuantity(product) {
-            const existingProduct = this.selectedProducts.find(p => p._id === product._id);
-            if (existingProduct && existingProduct.selectedQuantity > 1) {
-                existingProduct.selectedQuantity--;
-            } else if (existingProduct && existingProduct.selectedQuantity === 1) {
-                this.selectedProducts = this.selectedProducts.filter(p => p._id !== product._id);
-            }
-            this.calculateTotals();
-        },
-        clearForm() {
-            // Reset form
-            this.selectedProducts = [];
-            this.discount = 0;
-            this.customerDetails = { name: '', phone: '', email: '' };
-            this.paymentMethod = 'cash';
-            this.calculateTotals();
-        },
-        calculateTotals() {
-            this.subTotal = this.selectedProducts.reduce((total, product) => total + product.price * product.selectedQuantity, 0);
+        calculateTotal() {
+            this.subTotal = this.selectedProducts.reduce(
+                (acc, product) => acc + product.price * product.selectedQuantity,
+                0
+            );
             this.totalAmount = this.subTotal - this.discount;
         },
+        increaseQuantity(product) {
+            product.selectedQuantity++;
+            this.calculateTotal();
+        },
+        decreaseQuantity(product) {
+            if (product.selectedQuantity > 0) {
+                product.selectedQuantity--;
+                if (product.selectedQuantity === 0) {
+                    this.selectedProducts = this.selectedProducts.filter(p => p._id !== product._id);
+                }
+                this.calculateTotal();
+            }
+        },
+        formatCurrency(value) {
+            return 'KES ' + value.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        },
         async sellProduct() {
-            if (!this.customerDetails.name || !this.customerDetails.phone || !this.customerDetails.email) {
-                this.error = 'Please fill out all customer details.';
+            if (!this.selectedProducts.length) {
+                this.error = 'No products selected for sale.';
                 return;
             }
-            if (this.discount > 500) {
-                this.error = 'Discount cannot exceed 500 KES.';
-                return;
-            }
-            const payload = {
-                customerDetails: this.customerDetails,
-                products: this.selectedProducts.map(p => ({
-                    productId: p._id,
-                    quantity: p.selectedQuantity,
-                    price: p.price
+
+            const saleData = {
+                products: this.selectedProducts.map(product => ({
+                    productId: product._id,
+                    quantity: product.selectedQuantity,
+                    price: product.price,
                 })),
-                totalAmount: this.totalAmount,
-                discount: this.discount,
+                discount: this.discount || 0,
+                customerDetails: {
+                    name: this.customerDetails.name.trim(),
+                    phone: this.customerDetails.phone.trim(),
+                    email: this.customerDetails.email.trim() || null,
+                },
                 paymentMethod: this.paymentMethod,
+                totalAmount: this.totalAmount,
                 date: new Date().toISOString(),
-                servedBy: this.userName
+                servedBy: this.userName,
             };
 
             try {
                 const token = localStorage.getItem('token');
-                const saleResponse = await axios.post('https://posinet.onrender.com/api/sales', payload, {
+                if (!token) {
+                    throw new Error('Authorization token is missing. Please log in again.');
+                }
+
+                const response = await axios.post('https://posinet.onrender.com/api/sales', saleData, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
                 });
-                const headers = {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                };
-                await axios.post('https://posinet.onrender.com/api/sales', payload, { headers });
-                this.error = '';
-
-                this.clearForm();
-                this.$router.push({ name: 'ReceiptPage', params: { saleId: saleResponse.data.saleId } });
-
-
+                this.resetForm();
+                alert('Sale successful!');
+                this.$router.push({ name: 'ReceiptPage', params: { saleId: response.data.saleId } });
             } catch (error) {
-                console.error('Error completing sale:', error);
-                this.error = 'An error occurred while completing the sale.';
+                console.error('Error completing the sale:', error);
+                this.error = 'Error completing the sale: ' + error.message;
             }
         },
+        resetForm() {
+            this.selectedProducts = [];
+            this.discount = 0;
+            this.customerDetails = {
+                name: '',
+                phone: '',
+                email: ''
+            };
+            this.paymentMethod = 'cash';
+            this.error = '';
+            this.calculateTotal();
+        }
     },
     computed: {
         filteredSearchResults() {
+            if (!this.searchQuery) return [];
             return this.searchResults.filter(product =>
-                product.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                product.description.toLowerCase().includes(this.searchQuery.toLowerCase())
+                product.title.toLowerCase().includes(this.searchQuery.toLowerCase())
             );
-        },
-    },
-    watch: {
-        discount() {
-            if (this.discount > 500) {
-                this.discount = 500;
-            }
-            this.calculateTotals();
-        },
-        selectedProducts: {
-            handler() {
-                this.calculateTotals();
-            },
-            deep: true
         }
     }
 };
 </script>
-
-<style scoped></style>
