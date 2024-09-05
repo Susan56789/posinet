@@ -264,7 +264,7 @@ export default {
                     }
                 });
 
-                await axios.put(`https://posinet.onrender.com/api/products/${this.productForm._id}`, formData, {
+                await axios.put(`https://posinet.onrender.com/api/product/${this.productForm._id}`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
@@ -281,7 +281,7 @@ export default {
         async deleteProduct(productId) {
             if (confirm('Are you sure you want to delete this product?')) {
                 try {
-                    await axios.delete(`https://posinet.onrender.com/api/products/${productId}`);
+                    await axios.delete(`https://posinet.onrender.com/api/product/${productId}`);
                     this.fetchProducts();
                 } catch (error) {
                     console.error('Error deleting product:', error.response ? error.response.data : error.message);

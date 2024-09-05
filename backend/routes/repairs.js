@@ -8,6 +8,19 @@ module.exports = (client, app, authenticate) => {
     const customers = database.collection("customers");
     const sales = database.collection("sales");
 
+    const logActivity = async (type, description) => {
+        try {
+            const activity = {
+                type,
+                description,
+                timestamp: new Date()
+            };
+            await activities.insertOne(activity);
+        } catch (error) {
+            console.error('Error logging activity:', error);
+        }
+    };
+
     // Get all repair items with customer details
     app.get('/api/repairs', authenticate, async (req, res) => {
         try {

@@ -104,7 +104,8 @@ module.exports = (client, app, authenticate) => {
 
             // Commit the transaction
             await session.commitTransaction();
-
+            // Log activity
+            await logActivity('sales', `New Sale: ${id}`);
             res.status(201).json({
                 message: 'Sale completed successfully',
                 saleId: saleId

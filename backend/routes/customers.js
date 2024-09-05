@@ -46,6 +46,8 @@ module.exports = function (client, app, authenticate) {
                     totalPurchases
                 });
             }
+            // Log activity
+            await logActivity('customer', `New Customer: ${name}`);
 
             res.status(200).json({ message: 'Customer data updated successfully' });
         } catch (error) {
@@ -53,6 +55,8 @@ module.exports = function (client, app, authenticate) {
             res.status(500).json({ message: 'Error updating customer data', error: error.message });
         }
     });
+
+
     // Get customer details by ID
     app.get('/api/customers/:id', authenticate, async (req, res) => {
         const { id } = req.params;
@@ -83,6 +87,8 @@ module.exports = function (client, app, authenticate) {
                 { $set: { creditLimit: creditLimit } }
             );
             if (result.matchedCount > 0) {
+                // Log activity
+                await logActivity('sales', `Updated Sale: ${id}`);
                 res.status(200).json({ message: 'Credit limit updated successfully' });
             } else {
                 res.status(404).json({ message: 'Customer not found' });
