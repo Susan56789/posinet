@@ -47,7 +47,8 @@
                                 -
                             </button>
                             <span class="mx-2">{{ product.selectedQuantity || 0 }}</span>
-                            <button @click="increaseQuantity(product)"
+                            <!-- Update: Call addProductToSale when the plus button is clicked -->
+                            <button @click="addProductToSale(product)"
                                 class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300">
                                 +
                             </button>
@@ -161,7 +162,6 @@
         </div>
     </div>
 </template>
-
 <script>
 import axios from 'axios';
 import { useStore } from 'vuex';
@@ -189,27 +189,34 @@ export default {
                 email: ''
             },
             paymentMethod: 'cash',
-            error: '',
+            error: null,
             latestProducts: [],
-            subTotal: 0,
-            totalAmount: 0
+
         };
     },
-    created() {
-        this.fetchLatestProducts();
+    computed: {
+        subTotal() {
+            return this.selectedProducts.reduce((total, product) => {
+                return total + (product.selectedQuantity * product.price);
+            }, 0);
+        },
+        totalAmount() {
+            return this.subTotal - this.discount;
+        },
+        filteredSearchResults() {
+            if (!this.searchQuery) return [];
+            return this.searchResults.filter(product =>
+                product.title.toLowerCase().includes(this.searchQuery.toLowerCase())
+            );
+        }
     },
     methods: {
         async fetchLatestProducts() {
             try {
-                const res = await axios.get('https://posinet.onrender.com/api/products/latest');
-                this.latestProducts = res.data.map(product => ({
-                    ...product,
-                    selectedQuantity: 0,
-                    price: product.salePrice
-                }));
+                const response = await axios.get('https://posinet.onrender.com/api/products/latest');
+                this.latestProducts = response.data;
             } catch (error) {
-                console.error('Error fetching latest products:', error);
-                this.error = 'Error fetching latest products: ' + error.message;
+                this.error = 'Failed to fetch latest products';
             }
         },
         searchProduct() {
@@ -239,36 +246,25 @@ export default {
             if (existingProduct) {
                 existingProduct.selectedQuantity++;
             } else {
-                this.selectedProducts.push({
-                    ...product,
-                    selectedQuantity: 1
-                });
+                this.selectedProducts.push({ ...product, selectedQuantity: 1 });
             }
-
-            this.calculateTotal();
-        },
-        calculateTotal() {
-            this.subTotal = this.selectedProducts.reduce(
-                (acc, product) => acc + product.price * product.selectedQuantity,
-                0
-            );
-            this.totalAmount = this.subTotal - this.discount;
         },
         increaseQuantity(product) {
-            product.selectedQuantity++;
-            this.calculateTotal();
-        },
-        decreaseQuantity(product) {
-            if (product.selectedQuantity > 0) {
-                product.selectedQuantity--;
-                if (product.selectedQuantity === 0) {
-                    this.selectedProducts = this.selectedProducts.filter(p => p._id !== product._id);
-                }
-                this.calculateTotal();
+            const existingProduct = this.selectedProducts.find(p => p._id === product._id);
+            if (existingProduct) {
+                existingProduct.selectedQuantity++;
             }
         },
-        formatCurrency(value) {
-            return 'KES ' + value.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        decreaseQuantity(product) {
+            const existingProduct = this.selectedProducts.find(p => p._id === product._id);
+            if (existingProduct && existingProduct.selectedQuantity > 1) {
+                existingProduct.selectedQuantity--;
+            } else {
+                this.selectedProducts = this.selectedProducts.filter(p => p._id !== product._id);
+            }
+        },
+        formatCurrency(amount) {
+            return `KES ${amount.toFixed(2)}`;
         },
         async sellProduct() {
             if (!this.selectedProducts.length) {
@@ -322,17 +318,13 @@ export default {
                 email: ''
             };
             this.paymentMethod = 'cash';
-            this.error = '';
-            this.calculateTotal();
+            this.searchQuery = '';
+
         }
     },
-    computed: {
-        filteredSearchResults() {
-            if (!this.searchQuery) return [];
-            return this.searchResults.filter(product =>
-                product.title.toLowerCase().includes(this.searchQuery.toLowerCase())
-            );
-        }
+    mounted() {
+        this.fetchLatestProducts();
     }
+
 };
 </script>

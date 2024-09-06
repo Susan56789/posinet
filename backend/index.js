@@ -19,7 +19,8 @@ const client = new MongoClient(uri);
 app.use(cors({
     origin: '*',
     methods: 'GET,POST,PUT,DELETE',
-    allowedHeaders: 'Content-Type,Authorization'
+    allowedHeaders: 'Content-Type,Authorization',
+    credentials: true,
 }));
 app.options('*', cors());
 app.use(bodyParser.json());
